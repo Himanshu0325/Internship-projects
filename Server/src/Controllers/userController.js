@@ -29,17 +29,19 @@ const Register = async (req, res) => {
   }
 
   const existedUser = await User.findOne({
-    $or: [{ userName }, { email }],
-  });
-
-  if (existedUser) {
-    return res.status(400).json({
-      status: 400,
-      message: "User already exists",
-      data: null,
-      code: 400
+      $or: [{ userName }, { email }],
     });
-  }
+    console.log(existedUser);
+
+    if (existedUser) {
+      const field = existedUser.userName === userName ? 'username' : 'email';
+      return res.status(409).json({
+        status: 409,
+        message: `User already exists with this ${field}`,
+        data: null,
+        code: 409
+      });
+    }
 
   const user = await User.create({
     fullName,
@@ -80,8 +82,6 @@ const Verify = async (req, res) => {
 
     const user = await User.findOne({ email })
 
-
-
     if (!user) {
       return res.status(404).json({
         status: 404,
@@ -100,7 +100,7 @@ const Verify = async (req, res) => {
       });
     }
 
-    if (user.status === false){
+    if (user.status === false) {
       return res.status(200).json({
         status: 401,
         message: "You are blocked",
@@ -174,52 +174,78 @@ const getAllUsers = async (req, res) => {
 }
 
 const updateUser = async (req, res) => {
-  const { fullName, userName, email } = req.body.form
+  try {
+    const { fullName, userName, email } = req.body.form
 
-  if (!fullName || !userName || !email) {
-    return res.status(400).json({
-      status: 400,
-      message: "All fields are required",
+    if (!fullName || !userName || !email) {
+      return res.status(400).json({
+        status: 400,
+        message: "All fields are required",
+        data: null,
+        code: 400
+      });
+    }
+    console.log(req.body.editUserData);
+
+    const editUserId = req.body.editUserData._id
+    console.log(editUserId);
+
+    const existedUser = await User.findOne({
+      $or: [{ userName }, { email }],
+      _id: { $ne: editUserId } // Exclude the current user
+    });
+    console.log(existedUser);
+
+    if (existedUser) {
+      const field = existedUser.userName === userName ? 'username' : 'email';
+      return res.status(409).json({
+        status: 409,
+        message: `User already exists with this ${field}`,
+        data: null,
+        code: 409
+      });
+    }
+
+    // Find and update, return the updated user
+    const updatedUser = await User.findByIdAndUpdate(
+      editUserId,
+      {
+        $set: {
+          fullName: fullName,
+          userName: userName,
+          email: email
+        }
+      },
+      { new: true, select: '-password -__v' }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        status: 404,
+        message: "User not found",
+        data: null,
+        code: 404
+      });
+    }
+
+
+    console.log('user Updated ', updatedUser);
+    res.status(200).json({
+      status: 200,
+      message: "User updated successfully",
+      data: { user: updatedUser },
+      code: 200
+    });
+
+  } catch (error) {
+    console.error('Error in updateUser:', error);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal server error",
       data: null,
-      code: 400
+      code: 500
     });
   }
-  console.log(req.body.editUserData);
-
-  const editUserId = req.body.editUserData._id
-  console.log(editUserId);
-
-  // Find and update, return the updated user
-  const updatedUser = await User.findByIdAndUpdate(
-    editUserId,
-    {
-      $set: {
-        fullName: fullName,
-        userName: userName,
-        email: email
-      }
-    },
-    { new: true } 
-  );
-
-  if (!updatedUser) {
-    return res.status(404).json({
-      status: 404,
-      message: "User not found",
-      data: null,
-      code: 404
-    });
-  }
-
-
-  console.log('user Updated ', updatedUser);
-  res.status(200).json({
-    status: 200,
-    message: "User updated successfully",
-    data: { user: updatedUser },
-    code: 200
-  });
-
 }
 
 const searchItem = async (req, res) => {
@@ -247,21 +273,21 @@ const searchItem = async (req, res) => {
     const data = await User.find({
       fullName: { $regex: searchitem, $options: 'i' }
     })
-    .sort({ _id: -1 })
-    .skip(skip)
-    .limit(limit)
-    .select('-password'); 
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .select('-password');
 
     // const data = await User.find({ fullName: searchitem }).select('-password')
 
     // Optionally, get total count for frontend
     const total = await User.countDocuments();
 
-    console.log('user Founded :',data);
+    console.log('user Founded :', data);
     res.status(200).json({
       status: 200,
       message: "User Founded",
-      data : data,
+      data: data,
       total,
       code: 200
     });
@@ -279,11 +305,11 @@ const searchItem = async (req, res) => {
   }
 }
 
-const handleStatus = async (req,res) =>{
+const handleStatus = async (req, res) => {
   try {
 
-    const {  id } = req.body;
-    
+    const { id } = req.body;
+
 
     if (!id) {
       return res.status(400).json({
@@ -294,7 +320,7 @@ const handleStatus = async (req,res) =>{
       });
     }
 
-   const user = await User.findById(id);
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({
         status: 404,
@@ -304,18 +330,18 @@ const handleStatus = async (req,res) =>{
       });
     }
 
-     // Toggle status
+    // Toggle status
     user.status = !user.status;
     await user.save();
 
 
     res.status(200).json({
-    status: 200,
-    message: "Users Status updated successfully",
-    data: user,
-    code: 200
-  });
-    
+      status: 200,
+      message: "Users Status updated successfully",
+      data: user,
+      code: 200
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -327,4 +353,4 @@ const handleStatus = async (req,res) =>{
   }
 }
 
-export { Register, Verify, getAllUsers, updateUser, searchItem , handleStatus }
+export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus }

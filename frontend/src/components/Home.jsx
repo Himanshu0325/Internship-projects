@@ -2,9 +2,13 @@ import { Cookies } from "react-cookie";
 import withAuth from "../HOC/Verify";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { validateEmail } from "../utils/validateEmail";
+
+
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
 
 import add from '../assets/add1.png'
 import searchimg from '../assets/search.png'
@@ -26,19 +30,57 @@ function Home() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const scrollRef = useRef(null)
-  let [ltr, setLtr] = useState('')
+  const [isMsgOpen, setIsMsgOpen] = useState(false)
+  const [msg , setMsg] = useState(null)
   const [filterStatus, setFilterStatus] = useState("all");
-  // const [status , setStatus] = useState(true)
+  const [errLine , setErrLine] = useState(null)
+  const [errMsg , setErrMsg] = useState('')
+  const [isValid , setIsValid] = useState(null)
   const [form, setForm] = useState({
     fullName: '',
     userName: '',
     email: '',
     password: '',
   });
+  const [error, setError] = useState({
+    fullName: false,
+    userName: false,
+    email: false,
+    password: false,
+  });
 
   const submit = async (e) => {
     e.preventDefault();
     console.log("Form submitted:", form);
+
+    if (!form.fullName || !form.userName || !form.email || !form.password) {
+      setErrLine(false)
+      setError({
+        fullName: true,
+        userName: true,
+        email: true,
+        password: true,
+      });
+      if(form.email){
+        const emailValidationResult = validateEmail(form.email);
+        setIsValid(emailValidationResult);
+  
+        if ( !emailValidationResult ) {
+          console.log('inside if', emailValidationResult);
+  
+          setErrLine(true)
+          return
+        }
+      }
+      return;
+    }
+
+
+   
+      // Clear error line if email is valid
+        setErrLine(false);
+
+      
     // Sending data to the server
     await axios({
       method: 'POST',
@@ -47,63 +89,85 @@ function Home() {
     })
       .then((res) => {
         console.log("Response from server:", res.data);
+        setMsg(res.data.message)
 
-        alert(res.data.message)
-        location.reload()
+        setIsMsgOpen(!isMsgOpen)
+        setIsAddOpen(!isAddOpen)
+        FetchData(1)
       })
       .catch((error) => {
         console.error("There was an error submitting the form!", error);
+        setMsg(error.response.data.message)
+        console.log(error.response.data.message);
+        
+        setIsMsgOpen(!isMsgOpen)
+        setErrLine(false)
       })
+      // .finally(()=>{
+      //   setIsValid(false)
+      // })
+      
 
   };
 
   const editUser = async (e) => {
     e.preventDefault()
     try {
+      if (!form.email || !form.password) {
+      setErrLine(false);
+      setError({
+        email: !form.email,
+        password: !form.password,
+      });
+      if(form.email){
+        const emailValidationResult = validateEmail(form.email);
+        setIsValid(emailValidationResult);
+  
+        if ( !emailValidationResult ) {
+          console.log('inside if', emailValidationResult);
+  
+          setErrLine(true)
+          return
+        }
+      }
+      return;
+    }
 
+
+      
+
+      // Clear error line if email is valid
+        setErrLine(false);
+
+      
       await axios({
         method: 'POST',
         url: 'http://localhost:4000/api/v21/user/editUser',
         data: { form, editUserData }
       })
         .then((res) => {
-          alert(res.data.message)
+          setMsg(res.data.message)
+          setIsMsgOpen(true)
+
           console.log(res.data);
-          const id = res.data.data.user._id
-          setData(prevData =>
-            prevData.map(user =>
-              user._id === id ? { ...user, ...res.data.data.user } : user
-            )
-          );
-          setIsEditOpen(!isEditOpen)
+           // Safely update user data
+        const id = res.data.data.user._id
+            setData(prevData =>
+                prevData.map(user =>
+                    user._id === id ? { ...user, ...res.data.data.user } : user
+                )
+            );
+        
+          setIsEditOpen(false)
         })
 
     } catch (error) {
       console.error("There was an error submitting the form!", error);
-      alert(error.response.data.message)
+      setMsg(error.response.data.message)
+      setIsMsgOpen(!isMsgOpen)
     }
   }
 
-  // const Search = async (e) => {
-  //   e.preventDefault()
-  //   console.log(searchitem);
-  //   try {
-
-  //     await axios({
-  //       method: 'POST',
-  //       url: 'http://localhost:4000/api/v21/user/searchUser',
-  //       data: { searchitem: searchitem }
-  //     })
-  //       .then((res) => {
-  //         setData(res.data.data)
-  //         // location.reload()
-  //       })
-
-  //   } catch (error) {
-  //     console.error("There was an error submitting the form!", error);
-  //     alert(error.response.data.message)
-  //   }
-  // }
 
   const FetchData = async (pageNum = 1) => {
     setLoading(true);
@@ -118,14 +182,13 @@ function Home() {
 
         if (res.data.data.length === 0) setHasMore(false);
 
-        // Append new data
-        // setData(prev => [...prev, ...res.data.data]);
-
         if (pageNum === 1) {
           setData(res.data.data.length === 0 ? [] : [...res.data.data]);
         } else {
           setData([...data, ...res.data.data])
         }
+
+        
       })
       .catch((err) => {
         console.log("failed", err);
@@ -140,15 +203,11 @@ function Home() {
   const handleScroll = async (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
 
-    console.log("Before i: ", page, hasMore);
-
-
+    console.log(!loading , hasMore , '*',page ,scrollHeight - scrollTop - clientHeight);
+    
     if (!loading && hasMore && scrollHeight - scrollTop - clientHeight < 100) {
       setPage(prev => prev + 1);
     }
-
-    console.log("Before i: ", page, hasMore);
-
 
   }
 
@@ -188,7 +247,29 @@ function Home() {
 
   useEffect(() => {
     FetchData(page)
+    console.log('fetchdata run');
+    
   }, [page, search, searchitem])
+
+
+  useEffect(() => {
+  const filteredData = data.filter((item) => {
+    if (filterStatus === "all") return true;
+    if (filterStatus === "active") return item.status === true;
+    if (filterStatus === "deactive") return item.status === false;
+    return true;
+  });
+
+  console.log('Filtered data length:', filteredData.length , data.length , data);
+  
+  
+  if (filteredData.length < 8 &&  filteredData.length > 0 && !loading) {
+    console.log('Loading more data...' , filteredData.length, filteredData.length < 8 ,!loading);
+    setLoading(true);
+    setPage(prev => prev + 1);
+  }
+  
+}, [ filterStatus]);
 
   return (
     <div className="bg-[#f5f5f5] h-[93.20vh] w-[99vw] flex flex-col ">
@@ -204,9 +285,7 @@ function Home() {
               if (scrollRef.current) {
                 scrollRef.current.scrollTop = 0;
               }
-
-
-            }} >
+            }}>
               Search
               <img
                 src={searchimg}
@@ -228,32 +307,29 @@ function Home() {
 
         <div className="flex items-center">
 
-          <Dropdown style={{marginRight:'1rem'}}>
-            <Dropdown.Toggle variant="success" id="dropdown-basic">
-              Sort
-            </Dropdown.Toggle>
+          <DropdownButton id="dropdown-basic-button" title="Filter" style={{marginRight:'1rem'}} >
+            <Dropdown.Item onClick={()=>{setFilterStatus('active') }}>Active</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{setFilterStatus('deactive') }}>InActive</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{setFilterStatus('reset') }}>All</Dropdown.Item>
+          </DropdownButton>
 
-            <Dropdown.Menu>
-              <Dropdown.Item onClick={()=>{
-                setFilterStatus('active')
-                
-              }}>Active Users</Dropdown.Item>
-              <Dropdown.Item onClick={()=>{setFilterStatus('deactive')
-              
-              }}>De-Active Users</Dropdown.Item>
-              <Dropdown.Item onClick={()=>{setFilterStatus('all')
-               
-              }}>Reset</Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown>
-
-          <Button
-            variant="success"
-            style={{
+          <Button style={{
               marginRight: '2rem',
               borderRadius: '0.5rem',
             }}
             onClick={() => {
+              setForm({
+                fullName: '',
+                userName: '',
+                email: '',
+                password: '',
+              })
+              setError({
+                fullName: false,
+                userName: false,
+                email: false,
+                password: false,
+              });
               setIsAddOpen(!isAddOpen);
             }}
           >
@@ -261,17 +337,16 @@ function Home() {
             <img
               src={add}
               alt="Add"
-              style={{ width: '2rem', height: '2rem', marginRight: '0.5rem', display: 'inline-block', verticalAlign: 'middle' }}
+              style={{ width: '1.5rem', marginLeft: '0.5rem', display: 'inline-block', verticalAlign: 'middle' }}
             />
           </Button>
-
 
         </div>
         
 
       </div>
 
-      <div ref={scrollRef} className=" overflow-x-hidden  object-cover border border-black " style={{ margin: '2rem', borderRadius: '1rem', scrollbarGutter:'stable' }} onScroll={handleScroll}>
+      <div ref={scrollRef} className=" overflow-x-hidden  object-cover border border-black overflow-y-scroll [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300" style={{ margin: '2rem', borderRadius: '1rem',  }} onScroll={handleScroll}>
         <table className="w-[96vw] bg-white shadow-md rounded-lg  text-center " style={{ borderRadius: '1rem' }} >
           <thead>
             <tr className="bg-blue-600 text-black text-center border ">
@@ -289,6 +364,7 @@ function Home() {
               .filter((item) => {
                 if (filterStatus === "all") return true;
                 if (filterStatus === "active") return item.status === true;
+                     
                 if (filterStatus === "deactive") return item.status === false;
                 return true;
               })
@@ -346,7 +422,7 @@ function Home() {
                         variant="danger"
                         onClick={(e) => handleStatus(item._id)}
                       >
-                        De-Active
+                        InActive
                         <img
                           src={deactive}
                           alt="de-active"
@@ -371,7 +447,7 @@ function Home() {
 
       {/* User edit Form code */}
       <div className={`${isEditOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-3xl z-40`} style={{ pointerEvents: 'auto' }}>
-        <div className={` h-[60%] w-[40%] border-black border absolute bg-white flex flex-col items-center  `} style={{ borderRadius: '2rem', gap: '1rem', top: '20%', right: '30%' }}>
+        <div className={` h-[70%] w-[40%] border-black border absolute bg-white flex flex-col items-center  `} style={{ borderRadius: '2rem', gap: '1rem', top: '12%', right: '30%' }}>
           <h2 className="m-3">Edit User Information</h2>
 
           <form className=" flex flex-col w-[75%]  " style={{ gap: '1rem' }} >
@@ -388,10 +464,12 @@ function Home() {
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                onClick={() => { setError({ ...error, fullName: true }); }}
               />
+              <div className={`${!form.fullName && form.fullName !== undefined ? 'visible' : 'hidden'} text-[#d62626]`}>
+                ! Name is required
+              </div>
             </div>
-
-
 
             <div>
               <label htmlFor="userName" className="block text-sm font-medium text-gray-700">
@@ -405,7 +483,11 @@ function Home() {
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 onChange={(e) => setForm({ ...form, userName: e.target.value })}
+                onClick={() => { setError({ ...error, userName: true }); }}
               />
+              <div className={`${!form.userName && form.userName !== undefined ? 'visible' : 'hidden'} text-[#d62626]`}>
+                ! UserName is required
+              </div>
             </div>
 
 
@@ -423,22 +505,25 @@ function Home() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 onChange={(e) => {
                   setForm({ ...form, email: e.target.value })
-                  //  setShowSendOtp(e.target.value.length > 5);
+                 
                 }}
-              // onKeyDown={()=>{
-              //   setOtpForm(!showOtpForm)
-              // }}
+                 onClick={() => { setError({ ...error, email: true }); }}
               />
 
-              {/* <div className={`${showOtpForm? 'visible' : 'hidden'}`}>
-              <button >Send OTP</button>
-            </div> */}
+              {error.email && (
+              <div className={`${!form.email ? 'visible' : 'hidden'} ${!errLine ? 'visible' : 'hidden'} text-[#d62626]`}>
+                ! Email is required
+              </div>
+            )}
+            <div className={`${errLine ? 'visible' : 'hidden'} h-[1rem] w-[20rem] text-[#d62626]`}>
+              Invalid Email! Enter Correct email
+            </div>
 
             </div>
 
             <div className="flex items-center gap-4">
               <Button variant="dark" size="sm" className="self-center " type='submit' style={{ width: '8rem' }}
-                onClick={editUser} >Save</Button>
+                onClick={editUser} >Update</Button>
 
               <Button variant="dark" size="sm" className="self-center " type='submit' style={{ width: '8rem' }}
                 onClick={(e) => {
@@ -454,7 +539,7 @@ function Home() {
 
       {/* user Add form code */}
       <div className={`${isAddOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-3xl z-40`} style={{ pointerEvents: 'auto' }}>
-        <div className={` h-[70%] w-[40%] border-black border absolute bg-white flex flex-col items-center  `} style={{ borderRadius: '2rem', gap: '1rem', top: '20%', right: '30%' }}>
+        <div className={` h-[80%] w-[40%] border-black border absolute bg-white flex flex-col items-center  `} style={{ borderRadius: '2rem', gap: '1rem', top: '12%', right: '30%' }}>
           <h2 className="m-3">Add User Information</h2>
 
           <form className=" flex flex-col w-[75%]  " style={{ gap: '1rem' }} >
@@ -469,9 +554,19 @@ function Home() {
                 name="name"
                 value={form.fullName}
                 required
+                
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                onClick={()=>{ setError({...error , fullName: true }) }}
               />
+              { 
+                error.fullName && (
+                  <div className={`${!form.fullName && form.fullName !== undefined ? 'visible' : 'hidden'} text-[#d62626]`}>
+                  ! Name is required
+                   </div>
+                )
+              }
+              
             </div>
 
 
@@ -488,7 +583,15 @@ function Home() {
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 onChange={(e) => setForm({ ...form, userName: e.target.value })}
+                 onClick={()=>{ setError({...error , userName: true }) }}
               />
+              {
+                error.userName && (
+                  <div className={`${!form.userName && form.userName === '' ? 'visible' : 'hidden'} text-[#d62626]`}>
+                    ! UserName is required
+                  </div>
+                )
+              }
             </div>
 
 
@@ -506,16 +609,17 @@ function Home() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 onChange={(e) => {
                   setForm({ ...form, email: e.target.value })
-                  //  setShowSendOtp(e.target.value.length > 5);
                 }}
-              // onKeyDown={()=>{
-              //   setOtpForm(!showOtpForm)
-              // }}
+                 onClick={()=>{ setError({...error , email: true }) }}
               />
-
-              {/* <div className={`${showOtpForm? 'visible' : 'hidden'}`}>
-              <button >Send OTP</button>
-            </div> */}
+              {error.email && (
+              <div className={`${!form.email ? 'visible' : 'hidden'} ${!errLine ? 'visible' : 'hidden'} text-[#d62626]`}>
+                ! Email is required
+              </div>
+            )}
+            <div className={`${errLine ? 'visible' : 'hidden'} h-[1rem] w-[20rem] text-[#d62626]`}>
+              Invalid Email! Enter Correct email
+            </div>
 
             </div>
             <div>
@@ -528,14 +632,21 @@ function Home() {
                 name="password"
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                onChange={(e) => { setForm({ ...form, password: e.target.value }) }
-                }
+                onChange={(e) => { setForm({ ...form, password: e.target.value }) }}
+                 onClick={()=>{ setError({...error , password: true }) }}
               />
+              {
+                error.password && (
+                  <div className={`${!form.password && form.password !== undefined ? 'visible' : 'hidden'} text-[#d62626]`}>
+                    ! password is required
+                  </div>
+                )
+              }
             </div>
 
             <div className="flex items-center gap-4">
               <Button variant="dark" size="sm" className="self-center " type='submit' style={{ width: '8rem' }}
-                onClick={submit} >Save</Button>
+                onClick={submit} >Add</Button>
               <Button variant="dark" size="sm" className="self-center " style={{ width: '8rem' }}
                 onClick={() => {
                   setIsAddOpen(!isAddOpen)
@@ -546,7 +657,18 @@ function Home() {
         </div>
       </div>
 
-
+       {/* Message Box */}
+       <div className={`${isMsgOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-3xl z-40`} style={{ pointerEvents: 'auto' }}>
+          <div className={`h-[15rem] w-[20rem] border border-black absolute top-[35%] left-[35%] bg-white flex flex-col items-center justify-center rounded-[1rem]`}>
+            <p>{msg}</p>
+            <Button variant="dark" size="sm" className="self-center " style={{ width: '8rem' }}
+                onClick={() => {
+                  setIsMsgOpen(!isMsgOpen)
+                  
+                }} >Ok</Button>
+          </div>
+        </div>
+       
 
     </div>
   )
