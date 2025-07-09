@@ -202,10 +202,11 @@ const Login = React.memo(() => {
             onClick={() => {
               setIsMsgOpen(!isMsgOpen);
               const accessToken = cookie.get('accessToken');
-              
               if (accessToken) {
                 location.replace('/home');
               }
+
+              
             }}
           >
             Ok

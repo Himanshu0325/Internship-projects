@@ -5,7 +5,6 @@ import { Cookies } from "react-cookie";
 import Button from 'react-bootstrap/Button';
 import { validateEmail } from "../utils/validateEmail";
 import { PasswordStrengthChecker } from "./passwordStrengthChecker";
-import { generateOTP } from "../utils/OtpGeneration";
 
 
 import register from '../assets/register.webp'
@@ -17,6 +16,7 @@ const Register = React.memo(() => {
   const [msg, setMsg] = useState(null);
   const [isValid, setIsValid] = useState(null);
   const [passwordStrength, setPasswordStrength] = useState(null);
+  const [VerifyingEmail , setVerifyingEmail] = useState('')
 
   const [form, setForm] = useState({
     fullName: '',
@@ -39,7 +39,6 @@ const Register = React.memo(() => {
   const submit = async (e) => {
     e.preventDefault();
     console.log("Form submitted:", form);
-    // console.log(generateOTP());
     
 
     // Validate all required fields for registration
@@ -95,6 +94,9 @@ const Register = React.memo(() => {
 
         setMsg(res.data.message);
         setIsMsgOpen(!isMsgOpen);
+        console.log(res.data.data.email);
+        
+        setVerifyingEmail(res.data.data.email)
 
         // Clear form after successful registration
         setForm({
@@ -121,6 +123,23 @@ const Register = React.memo(() => {
         setIsMsgOpen(!isMsgOpen);
       });
   };
+
+  const GenerateOtp = async ()=>{
+
+    await axios({
+      method:'POST',
+      url:'http://localhost:4000/api/v21/email-Verification/generate-otp',
+      data: {VerifyingEmail:VerifyingEmail}
+    })
+      .then((res) => {
+
+        if (res.data.message && res.data.message === 'OTP Created Successfully') {
+          console.log('*****',);
+
+          location.replace('/verify')
+        }
+      })
+  }
 
    const handlePasswordChange = (e) => {
     setForm({ ...form, password: e.target.value });
@@ -280,6 +299,7 @@ const Register = React.memo(() => {
               </div>
             )}
           </div>
+
           </div>
 
           
@@ -312,18 +332,29 @@ const Register = React.memo(() => {
             size="sm" 
             className="self-center" 
             style={{ width: '8rem' }}
-            onClick={() => {
+            onClick={async () => {
               setIsMsgOpen(!isMsgOpen);
               // Redirect to login after successful registration
-              if (msg && msg.includes('success')) {
-                location.replace('/login');
+              if (msg && msg.includes('successfully')) {
+                 await GenerateOtp()
+                 console.log('**');
+                 
+                 
               }
             }}
           >
-            Ok
+            {
+              msg && msg.includes('successfully') ? 'Verify Email' : 'Try Again' 
+            }
           </Button>
         </div>
       </div>
+
+      {/* <div className={`${isOtpBoxOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-3xl z-40`} style={{ pointerEvents: 'auto' }}>
+        <div className={`h-[15rem] w-[20rem] border border-black absolute top-[35%] left-[35%] bg-white flex flex-col items-center justify-center rounded-[1rem]`}>
+
+        </div>
+        </div> */}
     </div>
   );
 });

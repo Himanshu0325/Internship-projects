@@ -15,7 +15,6 @@ const Auth = React.memo(() => {
   const [msg, setMsg] = useState(null)
   const [isValid , setIsValid] = useState(null)
 
-  const [showSendOtp, setShowSendOtp] = useState(false);
   const [form, setForm] = useState({
     fullName: '',
     userName: '',
@@ -270,7 +269,7 @@ const Auth = React.memo(() => {
         </p>
       </div>
 
-
+      {/* msg box */}
       <div className={`${isMsgOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-3xl z-40`} style={{ pointerEvents: 'auto' }}>
         <div className={`h-[15rem] w-[20rem] border border-black absolute top-[35%] left-[35%] bg-white flex flex-col items-center justify-center rounded-[1rem]`}>
           <p>{msg}</p>
@@ -286,8 +285,6 @@ const Auth = React.memo(() => {
         </div>
       </div>
     </div>
-
-
   );
 
 })
