@@ -100,8 +100,17 @@ const Verify = async (req, res) => {
       });
     }
 
+    if (user.isVerified === false) {
+      return res.status(400).json({
+        status: 401,
+        message: "You need to verify Your Email",
+        data: null,
+        code: 401
+      });
+    }
+
     if (user.status === false) {
-      return res.status(200).json({
+      return res.status(400).json({
         status: 401,
         message: "You are blocked",
         data: null,

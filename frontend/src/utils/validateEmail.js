@@ -21,7 +21,7 @@ export const validateEmail = (email) => {
   // return advancedRegex.test(email);
 
     // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|outlook\.com|hotmail\.com|icloud\.com|protonmail\.com)$/i;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|mailinator.com|yahoo\.com|outlook\.com|hotmail\.com|icloud\.com|protonmail\.com)$/i;
 
   return emailRegex.test(email);
 

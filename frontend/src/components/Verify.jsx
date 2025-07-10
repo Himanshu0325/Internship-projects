@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import axios from 'axios';
 
 const OTPVerification = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -7,6 +9,8 @@ const OTPVerification = () => {
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const inputRefs = useRef([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const email = searchParams.get('email')
 
   useEffect(() => {
     let timer;
@@ -59,28 +63,49 @@ const OTPVerification = () => {
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     setVerificationStatus('verifying');
-    
-    // Simulate API call
-    setTimeout(() => {
-      const otpCode = otp.join('');
-      if (otpCode === '1234') { // Mock validation
+    const otpCode = otp.join('')
+    await axios({
+      method:'POST',
+      url:'http://localhost:4000/api/v21/email-Verification/verify-otp',
+      data:{email:email , otpCode: otpCode }
+    })
+    .then((res)=>{
+
+      const Message = res.data.message
+      
+      if(Message === 'OTP Matched'){
         setVerificationStatus('success');
-        setTimeout(() => {
-          // Redirect logic here
-          console.log('Redirecting...');
-        }, 1500);
-      } else {
+        setTimeout(()=>{
+          location.replace('/login')
+        },1500)
+      }
+      // else{
+      //   setVerificationStatus('error');
+        
+      //    setTimeout(() => {
+      //     setVerificationStatus('idle');
+      //     setOtp(['', '', '', '']);
+      //     inputRefs.current[0]?.focus();
+      //     setActiveInput(0);
+      //   }, 2000);
+      // }
+    })
+    .catch((error)=>{
+      const Message = error.response.data.message
+      if(Message === 'OTP Matching Failed'){
         setVerificationStatus('error');
-        setTimeout(() => {
+        
+         setTimeout(() => {
           setVerificationStatus('idle');
           setOtp(['', '', '', '']);
           inputRefs.current[0]?.focus();
           setActiveInput(0);
         }, 2000);
       }
-    }, 1500);
+    })
+
   };
 
   const resendOTP = () => {
@@ -104,7 +129,7 @@ const OTPVerification = () => {
         />
         <h1 className="text-[1.5rem] font-bold text-[#1f2937] mb-[0.5rem]">Verify Your Identity</h1>
         <p className="text-[#6b7280] text-[1rem] leading-[1.5rem]">
-          We've sent a 4-digit code to your registered phone number
+         { `We've sent a 4-digit code to your ${email}` }
         </p>
       </div>
       

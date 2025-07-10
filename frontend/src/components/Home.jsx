@@ -16,6 +16,7 @@ import clear from '../assets/clear.png'
 import active from '../assets/active.png'
 import deactive from '../assets/de-active.png'
 import edit from '../assets/edit.png'
+import { ActivityLog } from "./Log";
 
 
 function Home() {
@@ -36,6 +37,8 @@ function Home() {
   const [errLine , setErrLine] = useState(null)
   const [errMsg , setErrMsg] = useState('')
   const [isValid , setIsValid] = useState(null)
+
+  const [isLogsOpen , setIsLogsOpen] = useState(false)
   const [form, setForm] = useState({
     fullName: '',
     userName: '',
@@ -74,9 +77,6 @@ function Home() {
       }
       return;
     }
-
-
-   
       // Clear error line if email is valid
         setErrLine(false);
 
@@ -112,12 +112,19 @@ function Home() {
 
   const editUser = async (e) => {
     e.preventDefault()
+    console.log('update user');
+    
     try {
-      if (!form.email || !form.password) {
+      console.log(form);
+      
+      if (!form.email || !form.userName || !form.fullName) {
+        console.log('inside 1if');
+        
       setErrLine(false);
       setError({
         email: !form.email,
-        password: !form.password,
+        fullName: !form.fullName,
+        userName: !form.userName
       });
       if(form.email){
         const emailValidationResult = validateEmail(form.email);
@@ -166,6 +173,10 @@ function Home() {
       setMsg(error.response.data.message)
       setIsMsgOpen(!isMsgOpen)
     }
+  }
+
+  const fetchingActivityLog = async () =>{
+    let refr
   }
 
 
@@ -275,7 +286,7 @@ function Home() {
     <div className="bg-[#f5f5f5] h-[93.20vh] w-[99vw] flex flex-col ">
 
       <div className="w-full h-[10%] flex justify-between bg-white shadow-md rounded-lg  items-center" style={{ padding: '1.5rem' }}>
-        <div className="w-[40%] h-full flex items-center mx-2 ">
+        <div className="w-[50%] h-full flex items-center mx-2 ">
           <Form inline className="flex w-[80%] ">
             <Form.Control type="search" placeholder="Search by Name" className="mr-sm-2" onChange={(e) => { setSearchitem(e.target.value) }} />
 
@@ -306,6 +317,8 @@ function Home() {
         </div>
 
         <div className="flex items-center">
+
+          <Button className="m-[1rem] " onClick={()=>{setIsLogsOpen(true)}}>Activity Logs</Button>
 
           <DropdownButton id="dropdown-basic-button" title="Filter" style={{marginRight:'1rem'}} >
             <Dropdown.Item onClick={()=>{setFilterStatus('active') }}>Active</Dropdown.Item>
@@ -356,6 +369,7 @@ function Home() {
               <th className="py-3 px-6 text-center border border-black">Email</th>
               <th className="py-3 px-6 text-center border border-black">Edit</th>
               <th className="py-3 px-6 text-center border border-black">Status</th>
+              <th className="py-3 px-6 text-center border border-black">Is Verified</th>
             </tr>
           </thead>
           <tbody>
@@ -369,8 +383,8 @@ function Home() {
                 return true;
               })
               .map((item, id) => (
-                <tr key={id} className={`border ${id % 2 === 0 ? 'bg-[#f3f4f6]' : 'bg-[#ffffff]'}`}>
-                  <td className="py-3 px-6 text-center border border-black">{id + 1}</td>
+                <tr key={id} className={`border ${id % 2 === 0 ? 'bg-[#f3f4f6]' : 'bg-[#ffffff]'} m-[1rem]`}>
+                  <td className="py-3 px-6  text-center border border-black">{id + 1}</td>
                   <td className="py-3 px-6 text-center border border-black">
                     {highlightText(item.fullName, searchitem)}
                   </td>
@@ -400,8 +414,9 @@ function Home() {
                   </td>
                   <td className="text-center border border-black">
                     {item.status ? (
-                      <Button
-                        variant="success"
+                      <button
+                        // variant="success"
+                        className="bg-[#3ea771] border-none px-[1rem] py-[.5rem] text-white rounded-[3rem]"
                         onClick={(e) => handleStatus(item._id)}
                       >
                         Active
@@ -413,13 +428,14 @@ function Home() {
                             height: '1.2rem',
                             marginLeft: '0.5rem',
                             display: 'inline-block',
-                            verticalAlign: 'middle'
+                            verticalAlign: 'middle',
                           }}
                         />
-                      </Button>
+                      </button>
                     ) : (
-                      <Button
-                        variant="danger"
+                      <button
+                        // variant="danger"
+                        className="bg-[#c94d4d] border-none px-[1rem] py-[.5rem] text-white rounded-[3rem]"
                         onClick={(e) => handleStatus(item._id)}
                       >
                         InActive
@@ -434,9 +450,44 @@ function Home() {
                             verticalAlign: 'middle'
                           }}
                         />
-                      </Button>
+                      </button>
                     )}
                   </td>
+                  <td className="py-3 px-6 text-center border border-black">{item.isVerified ? (
+                      <button
+                         className="bg-[#3ea771] border-none px-[1rem] py-[.5rem] text-white rounded-[3rem]"
+                      >
+                        Verified
+                        <img
+                          src={active}
+                          alt="Active"
+                          style={{
+                            width: '1.2rem',
+                            height: '1.2rem',
+                            marginLeft: '0.5rem',
+                            display: 'inline-block',
+                            verticalAlign: 'middle'
+                          }}
+                        />
+                      </button>
+                    ) : (
+                      <button
+                         className="bg-[#c94d4d] border-none px-[1rem] py-[.5rem] text-white rounded-[3rem]"
+                      >
+                        NOT-Verified
+                        <img
+                          src={deactive}
+                          alt="de-active"
+                          style={{
+                            width: '1.2rem',
+                            height: '1.2rem',
+                            marginLeft: '0.5rem',
+                            display: 'inline-block',
+                            verticalAlign: 'middle'
+                          }}
+                        />
+                      </button>
+                    )}</td>
                 </tr>
               ))}
             
@@ -658,7 +709,7 @@ function Home() {
       </div>
 
        {/* Message Box */}
-       <div className={`${isMsgOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-3xl z-40`} style={{ pointerEvents: 'auto' }}>
+       <div className={`${isMsgOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-[64px] z-40`} style={{ pointerEvents: 'auto' }}>
           <div className={`h-[15rem] w-[20rem] border border-black absolute top-[35%] left-[35%] bg-white flex flex-col items-center justify-center rounded-[1rem]`}>
             <p>{msg}</p>
             <Button variant="dark" size="sm" className="self-center " style={{ width: '8rem' }}
@@ -668,6 +719,12 @@ function Home() {
                 }} >Ok</Button>
           </div>
         </div>
+
+
+        {/* Activity logs */}
+        <div className={`${isLogsOpen ? 'visible' : 'hidden'} overflow-y-scroll h-90vh w-screen absolute inset-0 bg-transparent bg-opacity-20 backdrop-blur-[4px] z-40`} style={{ pointerEvents: 'auto' , bottom:0}}>
+          <ActivityLog setIsLogsOpen={setIsLogsOpen}/>
+         </div>
        
 
     </div>

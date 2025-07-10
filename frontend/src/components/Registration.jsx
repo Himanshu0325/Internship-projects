@@ -99,14 +99,14 @@ const Register = React.memo(() => {
         setVerifyingEmail(res.data.data.email)
 
         // Clear form after successful registration
-        setForm({
-          fullName: '',
-          userName: '',
-          email: '',
-          password: '',
-          cpassword:'',
-          otp: ''
-        });
+        // setForm({
+        //   fullName: '',
+        //   userName: '',
+        //   email: '',
+        //   password: '',
+        //   cpassword:'',
+        //   otp: ''
+        // });
 
         setError({
           fullName: false,
@@ -134,9 +134,16 @@ const Register = React.memo(() => {
       .then((res) => {
 
         if (res.data.message && res.data.message === 'OTP Created Successfully') {
-          console.log('*****',);
+          console.log('*****',res.data);
+          console.log(VerifyingEmail);
 
-          location.replace('/verify')
+           const encodedEmail = encodeURIComponent(VerifyingEmail);
+           console.log(encodedEmail);
+           
+           window.location.href = `/verify?email=${encodedEmail}`;
+        }else{
+          setMsg('Verification Failed Try Again')
+          setIsMsgOpen(true)
         }
       })
   }
@@ -275,7 +282,7 @@ const Register = React.memo(() => {
               Confirm Password
             </label>
             <input
-              type="cpassword"
+              type="password"
               id="cpassword"
               name="password"
               value={form.cpassword}
@@ -338,8 +345,6 @@ const Register = React.memo(() => {
               if (msg && msg.includes('successfully')) {
                  await GenerateOtp()
                  console.log('**');
-                 
-                 
               }
             }}
           >
@@ -350,11 +355,6 @@ const Register = React.memo(() => {
         </div>
       </div>
 
-      {/* <div className={`${isOtpBoxOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-3xl z-40`} style={{ pointerEvents: 'auto' }}>
-        <div className={`h-[15rem] w-[20rem] border border-black absolute top-[35%] left-[35%] bg-white flex flex-col items-center justify-center rounded-[1rem]`}>
-
-        </div>
-        </div> */}
     </div>
   );
 });

@@ -13,6 +13,8 @@ const Login = React.memo(() => {
   const [isMsgOpen, setIsMsgOpen] = useState(false);
   const [msg, setMsg] = useState(null);
   const [isValid, setIsValid] = useState(null);
+  const [VerifyingEmail , setVerifyingEmail] = useState('')
+  const [loggedInUser , setLoggedInUser] = useState({})
 
   const [form, setForm] = useState({
     email: '',
@@ -72,6 +74,7 @@ const Login = React.memo(() => {
         return;
       }
     }
+    setVerifyingEmail(form.email)
 
     // Sending data to the server
     await axios({
@@ -83,7 +86,12 @@ const Login = React.memo(() => {
         console.log("Response from server:", res.data);
 
         setMsg(res.data.message);
+        
         setIsMsgOpen(!isMsgOpen);
+
+        setLoggedInUser(res.data.loggedInUser)
+        console.log(res.data.loggedInUser,'******',loggedInUser);
+        
 
         const accessToken = res.data.tokens.accessToken;
         const refreshToken = res.data.tokens.refreshToken;
@@ -102,14 +110,36 @@ const Login = React.memo(() => {
       .catch((error) => {
         console.error("There was an error submitting the form!", error);
         setMsg(error.response.data.message);
+        
         setIsMsgOpen(!isMsgOpen);
       });
   };
 
+   const GenerateOtp = async ()=>{
+
+    await axios({
+      method:'POST',
+      url:'http://localhost:4000/api/v21/email-Verification/generate-otp',
+      data: {VerifyingEmail:VerifyingEmail}
+    })
+      .then((res) => {
+
+        if (res.data.message && res.data.message === 'OTP Created Successfully') {
+          console.log('*****',res.data);
+          console.log(VerifyingEmail);
+
+           const encodedEmail = encodeURIComponent(VerifyingEmail);
+           console.log(encodedEmail);
+           
+           window.location.href = `/verify?email=${encodedEmail}`;
+        }
+      })
+  }
+
   useEffect(() => {
     const accessToken = cookie.get('accessToken');
     if (accessToken) {
-      location.replace('/home');
+      location.replace(`/home?email=${loggedInUser.email}`);
     }
   }, []);
 
@@ -205,11 +235,33 @@ const Login = React.memo(() => {
               if (accessToken) {
                 location.replace('/home');
               }
-
+              console.log(msg);
               
+              if (msg && msg.includes('verify')) {
+
+                GenerateOtp()
+                const encodedEmail = encodeURIComponent(VerifyingEmail);
+                console.log(encodedEmail);
+
+                window.location.href = `/verify?email=${encodedEmail}`;
+              }
+
             }}
           >
-            Ok
+            {(() => {
+              if (!msg) return 'Continue';
+
+              switch (true) {
+                case msg.toLowerCase().includes('verify'):
+                  return 'Verify Email';
+                case msg.toLowerCase().includes('success'):
+                  return 'Continue';
+                case msg.toLowerCase().includes('error'):
+                  return 'Try Again';
+                default:
+                  return 'OK';
+              }
+            })()}
           </Button>
         </div>
       </div>

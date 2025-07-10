@@ -1,7 +1,9 @@
+import Mailer from "../Helper/mailer.js";
 import { EmailVerificationToken } from "../Models/emailVerificationTokenModel.js";
+import { User } from "../Models/userModel.js";
 import { generateOTP } from "../Utils/OtpGeneration.js";
 
-const emailVerification = async (req , res) =>{
+const emailVerificationToken = async (req , res) =>{
   try {
 
     const{ VerifyingEmail }= req.body
@@ -23,6 +25,21 @@ const emailVerification = async (req , res) =>{
     });
     }
 
+    const SendingMail = await Mailer(VerifyingEmail , code)
+    console.log(SendingMail);
+    
+
+    // if (!SendingMail) {
+    //   console.log('Sending mail failed');
+      
+    //   return res.status(500).json({
+    //     status: 500,
+    //     message: "Internal server error while sending Mail",
+    //     data: null,
+    //     code: 500
+    //   });
+    // }
+
     console.log('OTP Created Successfully');
     
     res.status(200).json({
@@ -43,4 +60,71 @@ const emailVerification = async (req , res) =>{
   }
 }
 
-export {emailVerification}
+const emailVerification = async (req,res)=>{
+  try {
+    const {email , otpCode}= req.body
+    console.log(email);
+    
+
+    if (!email) {
+      return res.status(401).json({
+        status: 401,
+        message: "All Feilds are required",
+        data: null,
+        code: 401
+      });
+    }
+
+    const tokenObject = await EmailVerificationToken.findOne({email})
+    console.log(tokenObject);
+    
+
+    if (!tokenObject) {
+      console.error("Error finding token:",);
+      return res.status(500).json({
+        status: 500,
+        message: "Internal server error",
+        data: null,
+        code: 500
+      });
+    }
+
+    const verificationCode = tokenObject.verificationCode
+
+
+    if (otpCode === verificationCode) {
+
+      const user = await User.findOne({ email })
+
+      user.isVerified = true;
+      user.status = true;
+      await user.save();
+      res.status(200).json({
+        status: 200,
+        message: 'OTP Matched',
+        data: null,
+        code: 200
+      })
+    }
+
+    return res.status(400).json({
+      status: 400,
+      message:'OTP Matching Failed',
+      data:null,
+      code : 400
+    })
+
+
+    
+  } catch (err) {
+     console.error(err);
+    res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null,
+      code: 500
+    });
+  }
+}
+
+export {emailVerificationToken , emailVerification}
