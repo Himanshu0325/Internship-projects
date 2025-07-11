@@ -14,7 +14,7 @@ const Login = React.memo(() => {
   const [msg, setMsg] = useState(null);
   const [isValid, setIsValid] = useState(null);
   const [VerifyingEmail , setVerifyingEmail] = useState('')
-  const [loggedInUser , setLoggedInUser] = useState({})
+  const [loggedInUser , setLoggedInUser] = useState('')
 
   const [form, setForm] = useState({
     email: '',
@@ -89,8 +89,12 @@ const Login = React.memo(() => {
         
         setIsMsgOpen(!isMsgOpen);
 
-        setLoggedInUser(res.data.loggedInUser)
-        console.log(res.data.loggedInUser,'******',loggedInUser);
+        const email = res.data.data.email
+        setLoggedInUser(email)
+        console.log(res.data.data.email,'******',loggedInUser);
+
+       localStorage.setItem('email', email)
+       localStorage.setItem('id', res.data.data._id)
         
 
         const accessToken = res.data.tokens.accessToken;
@@ -101,6 +105,8 @@ const Login = React.memo(() => {
           path: '/',
           expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
           secure: true,
+          // httpOnly: true, // Prevents XSS
+          // sameSite: 'strict'
         };
         cookie.set('accessToken', accessToken, options);
         cookie.set('refreshToken', refreshToken, options);
@@ -139,7 +145,7 @@ const Login = React.memo(() => {
   useEffect(() => {
     const accessToken = cookie.get('accessToken');
     if (accessToken) {
-      location.replace(`/home?email=${loggedInUser.email}`);
+      location.replace(`/home`);
     }
   }, []);
 
@@ -233,7 +239,7 @@ const Login = React.memo(() => {
               setIsMsgOpen(!isMsgOpen);
               const accessToken = cookie.get('accessToken');
               if (accessToken) {
-                location.replace('/home');
+                location.replace(`/home`);
               }
               console.log(msg);
               

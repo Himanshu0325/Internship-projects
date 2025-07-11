@@ -3,6 +3,7 @@ import withAuth from "../HOC/Verify";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { validateEmail } from "../utils/validateEmail";
+import { useParams, useSearchParams } from "react-router-dom";
 
 
 import Button from 'react-bootstrap/Button';
@@ -37,6 +38,9 @@ function Home() {
   const [errLine , setErrLine] = useState(null)
   const [errMsg , setErrMsg] = useState('')
   const [isValid , setIsValid] = useState(null)
+  
+  
+  const id = localStorage.getItem('id')
 
   const [isLogsOpen , setIsLogsOpen] = useState(false)
   const [form, setForm] = useState({
@@ -51,6 +55,10 @@ function Home() {
     email: false,
     password: false,
   });
+
+
+
+  
 
   const submit = async (e) => {
     e.preventDefault();
@@ -93,6 +101,9 @@ function Home() {
 
         setIsMsgOpen(!isMsgOpen)
         setIsAddOpen(!isAddOpen)
+        var NewUserId = res.data.data.id
+        
+        creatingActivityLog(NewUserId , 'Created')
         FetchData(1)
       })
       .catch((error) => {
@@ -140,13 +151,9 @@ function Home() {
       return;
     }
 
-
-      
-
       // Clear error line if email is valid
         setErrLine(false);
 
-      
       await axios({
         method: 'POST',
         url: 'http://localhost:4000/api/v21/user/editUser',
@@ -164,7 +171,11 @@ function Home() {
                     user._id === id ? { ...user, ...res.data.data.user } : user
                 )
             );
-        
+
+          var NewUserId = res.data.data.user._id
+          
+          console.log('editUserData :',editUserData);
+          creatingActivityLog(NewUserId , 'Updated' , editUserData)
           setIsEditOpen(false)
         })
 
@@ -175,8 +186,29 @@ function Home() {
     }
   }
 
-  const fetchingActivityLog = async () =>{
-    let refr
+  const creatingActivityLog = async (NewUserId , action , OldUserdata) =>{
+    console.log( id , NewUserId );
+    
+    try {
+      await axios({
+        method:'POST',
+        url:'http://localhost:4000/api/v21/Activity-log/Activitylog',
+        data:{
+           id : id,
+           tableName : 'UsersInfo',
+           recordId : NewUserId,
+           action : action,
+           OldUserdata : OldUserdata
+          }
+      })
+      .then((res)=>{
+        console.log(res.data);
+        
+      })
+    } catch (error) {
+      console.log(error);
+      
+    }
   }
 
 
@@ -237,6 +269,8 @@ function Home() {
               user._id === id ? { ...user, status: !user.status } : user
             )
           );
+          const userstatus = res.data.data.status ? 'Actived' :'Blocked'
+          creatingActivityLog( id , userstatus, true)
         })
     } catch (error) {
       console.error("There was an error submitting the form!", error);
@@ -268,6 +302,8 @@ function Home() {
     if (filterStatus === "all") return true;
     if (filterStatus === "active") return item.status === true;
     if (filterStatus === "deactive") return item.status === false;
+    if (filterStatus === "Verified") return item.isVerified === true;
+    if (filterStatus === "UnVerified") return item.isVerified === false;
     return true;
   });
 
@@ -283,7 +319,7 @@ function Home() {
 }, [ filterStatus]);
 
   return (
-    <div className="bg-[#f5f5f5] h-[93.20vh] w-[99vw] flex flex-col ">
+    <div className="bg-[#f5f5f5] h-[93.20vh] w-[99vw] flex flex-col overflow-hidden ">
 
       <div className="w-full h-[10%] flex justify-between bg-white shadow-md rounded-lg  items-center" style={{ padding: '1.5rem' }}>
         <div className="w-[50%] h-full flex items-center mx-2 ">
@@ -321,9 +357,11 @@ function Home() {
           <Button className="m-[1rem] " onClick={()=>{setIsLogsOpen(true)}}>Activity Logs</Button>
 
           <DropdownButton id="dropdown-basic-button" title="Filter" style={{marginRight:'1rem'}} >
+            <Dropdown.Item onClick={()=>{setFilterStatus('reset') }}>All</Dropdown.Item>
             <Dropdown.Item onClick={()=>{setFilterStatus('active') }}>Active</Dropdown.Item>
             <Dropdown.Item onClick={()=>{setFilterStatus('deactive') }}>InActive</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{setFilterStatus('reset') }}>All</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{setFilterStatus('Verified') }}>Verified</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{setFilterStatus('UnVerified') }}>UnVerified</Dropdown.Item>
           </DropdownButton>
 
           <Button style={{
@@ -378,8 +416,9 @@ function Home() {
               .filter((item) => {
                 if (filterStatus === "all") return true;
                 if (filterStatus === "active") return item.status === true;
-                     
                 if (filterStatus === "deactive") return item.status === false;
+                if (filterStatus === "Verified") return item.isVerified === true;
+                if (filterStatus === "UnVerified") return item.isVerified === false;
                 return true;
               })
               .map((item, id) => (
@@ -402,6 +441,7 @@ function Home() {
                           fullName: user.fullName || "",
                           email: user.email || "",
                           userName: user.userName || "",
+                          password:''
                         });
                       }}
                     >
@@ -709,7 +749,7 @@ function Home() {
       </div>
 
        {/* Message Box */}
-       <div className={`${isMsgOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0 bg-white bg-opacity-50 backdrop-blur-[64px] z-40`} style={{ pointerEvents: 'auto' }}>
+       <div className={`${isMsgOpen ? 'visible' : 'hidden'} h-screen w-screen absolute inset-0  bg-opacity-20 backdrop-blur-[12px] z-40`} style={{ pointerEvents: 'auto' }}>
           <div className={`h-[15rem] w-[20rem] border border-black absolute top-[35%] left-[35%] bg-white flex flex-col items-center justify-center rounded-[1rem]`}>
             <p>{msg}</p>
             <Button variant="dark" size="sm" className="self-center " style={{ width: '8rem' }}
@@ -722,10 +762,11 @@ function Home() {
 
 
         {/* Activity logs */}
-        <div className={`${isLogsOpen ? 'visible' : 'hidden'} overflow-y-scroll h-90vh w-screen absolute inset-0 bg-transparent bg-opacity-20 backdrop-blur-[4px] z-40`} style={{ pointerEvents: 'auto' , bottom:0}}>
+        {isLogsOpen && 
+          <div className={`overflow-y-scroll h-screen w-screen fixed inset-0 bg-transparent bg-opacity-20 backdrop-blur-[4px] `} style={{ pointerEvents: 'auto' , top:'10%'}}>
           <ActivityLog setIsLogsOpen={setIsLogsOpen}/>
          </div>
-       
+        }
 
     </div>
   )

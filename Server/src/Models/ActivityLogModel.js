@@ -1,5 +1,4 @@
 import mongoose, { Schema } from "mongoose";
-import { User } from "./userModel";
 
 const ActivityLogsSchema = new mongoose.Schema({
   table_name:{
@@ -13,16 +12,21 @@ const ActivityLogsSchema = new mongoose.Schema({
   },
   action:{
     type: String,
-    required : true
+    required : true,
+    enum: ['Created', 'Updated', 'Blocked' , 'Actived'],
   },
-  changedFeild:{
-    type: String,
-    required : true
+  changedField: {
+    type: Array,
+    required: true
   },
   performedBy:{
-    type : Schema.Types.ObjectId,
+    type : String,
     required : true
   }
-})
+},
+{
+  timestamps: true,
+}
+)
 
 export const ActivityLogs = mongoose.model("ActivityLogs", ActivityLogsSchema);

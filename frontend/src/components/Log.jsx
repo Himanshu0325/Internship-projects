@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, {forwardRef, useImperativeHandle, useEffect, useState } from "react";
 
 import logout from '../assets/logout.png'
+import axios from "axios";
 
-export const ActivityLog = (props) => {
+export const ActivityLog = ({ setIsLogsOpen }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [activityLogData, setActivityLogData] = useState([])
   
   const activityData = [
     {
@@ -29,11 +31,14 @@ export const ActivityLog = (props) => {
       darkBgColor: '#dc2626',
       category: 'Updated',
     },
+
   ];
+
+  
   
   const filteredActivities = activeFilter === 'all' 
-    ? activityData 
-    : activityData.filter(activity => activity.category === activeFilter);
+    ? activityLogData 
+    : activityLogData.filter(activity => activity.category === activeFilter);
   
   const getIconComponent = (iconName) => {
     switch(iconName) {
@@ -82,14 +87,109 @@ export const ActivityLog = (props) => {
   
   const filterOptions = [
     { key: 'all', label: 'All Activities', color: '#6366f1' },
-    // { key: 'meetings', label: 'Meetings', color: '#3b82f6' },
-    // { key: 'design', label: 'Design', color: '#8b5cf6' },
     { key: 'Created', label: 'Created', color: '#10b981' },
-    { key: 'Updated', label: 'Updated', color: '#ef4444' },
+    { key: 'Updated', label: 'Updated', color: '#FFBF00' },
+    { key: 'Actived', label: 'Active', color: '#3b82f6' },
+    { key: 'Blocked', label: 'Inactive', color: '#FF0000' },
   ];
+
+  const getActionConfig = (action) => {
+  switch(action) {
+    case 'Created':
+      return {
+        icon: 'team',
+        color: '#10b981',
+        bgColor: '#d1fae5',
+        darkBgColor: '#059669'
+      };
+    case 'Updated':
+      return {
+        icon: 'bug',
+        color: '#FFBF00',
+        bgColor: '#FDFD96',
+        darkBgColor: '#dc2626'
+      };
+    case 'Blocked':
+      return {
+        icon: 'bug',
+        color: '#FF0000',
+        bgColor: '#FFCCCB',
+        darkBgColor: '#dc2626'
+      };
+    case 'Actived':
+      return {
+        icon: 'bug',
+        color: '#3b82f6',
+        bgColor: '#ADD8E6',
+        darkBgColor: '#dc2626'
+      };
+    }
+  }
+
+  const formatTime = (timestamp) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffInHours = Math.abs(now - date) / 36e5;
+  
+  if (diffInHours < 1) {
+    return 'Just now';
+  } else if (diffInHours < 24) {
+    return `${Math.floor(diffInHours)} hours ago`;
+  } else if (diffInHours < 48) {
+    return 'Yesterday';
+  } else {
+    return `${Math.floor(diffInHours / 24)} days ago`;
+  }
+};
+
+  const FetchData = async ()=>{
+    try {
+
+      await axios({
+        method:'GET',
+        url:'http://localhost:4000/api/v21/Activity-log/FetchALLActivityLogs',
+      })
+      .then((res)=>{
+        console.log(res.data.data);
+        if (res.data.data && Array.isArray(res.data.data)) {
+          const FormatedData = res.data.data.map((item, index) => {
+            const actionConfig = getActionConfig(item.action);
+
+            return {
+              id: index + 1,
+              title: `${item.action} `,
+              description: `${item.action} operation performed on ${item.table_name} by ${item.performedBy || 'Unknown User'}`,
+              time: formatTime(item.updatedAt || item.createdAt || item.timestamp),
+              icon: actionConfig.icon,
+              color: actionConfig.color,
+              bgColor: actionConfig.bgColor,
+              darkBgColor: actionConfig.darkBgColor,
+              category: item.action,
+              performedBy: item.performedBy,
+              changedField: item.changedField || [],
+              // rawData: item // Keep original data for debugging
+            };
+
+          })
+          setActivityLogData(FormatedData);
+          console.log(FormatedData);
+        }
+        
+      })
+      
+    } catch (error) {
+      console.log(error);
+      
+    }
+  }
+
+  
+  useEffect(()=>{
+    FetchData()
+  },[])
   
   return (
-    <div className={`h-[80vh] transition-all overflow-y-scroll duration-[400ms] ${darkMode ? 'bg-[#0f172a]' : 'bg-[#f8fafc]'}`}>
+    <div className={`h-full transition-all overflow-y-scroll duration-[400ms] ${darkMode ? 'bg-[#0f172a]' : 'bg-[#f8fafc]'}`}>
       <div className="max-w-[64rem] mx-auto px-[1rem] py-[2rem] md:px-[2rem]">
         {/* Header */}
         <div className="flex justify-between items-center mb-[2rem]">
@@ -125,9 +225,10 @@ export const ActivityLog = (props) => {
               darkMode 
                 ? 'bg-[#1e293b] text-[#f1f5f9] hover:bg-[#334155] shadow-lg' 
                 : 'bg-[#ffffff] text-[#1e293b] hover:bg-[#f1f5f9] shadow-md'
-            }`}
-            onClick={()=>{props.setIsLogsOpen(false)}}>
-                <img className="h-[2rem] object-cover" src={logout} alt="" />
+            }
+            `}
+            onClick={()=>{setIsLogsOpen(false)}}>
+                <img className="h-[2rem] object-cover " src={logout} alt="" />
           </button>
         </div>
         
@@ -212,21 +313,52 @@ export const ActivityLog = (props) => {
                     
                     {/* User Info */}
                     <div className="flex items-center">
-                      <div className={`w-[2rem] h-[2rem] rounded-[0.5rem] flex items-center justify-center ${
-                        darkMode ? 'bg-[#334155]' : 'bg-[#f1f5f9]'
-                      }`}>
-                        <svg className="w-[1rem] h-[1rem] text-[#64748b]" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-                        </svg>
-                      </div>
                       
                       <div className="ml-[0.75rem]">
-                        <p className={`text-[0.875rem] font-medium ${darkMode ? 'text-[#f1f5f9]' : 'text-[#1e293b]'}`}>
-                          John Doe
-                        </p>
-                        <p className={`text-[0.75rem] ${darkMode ? 'text-[#94a3b8]' : 'text-[#64748b]'}`}>
-                          Administrator
-                        </p>
+                        {/* show username when a user is updated but the username is not changed */}
+                        {
+                          activity.changedField.map((item, index) => {
+                            if( activity.title === 'Updated ' && item.label === 'userName' && !item.newvalue){
+                             return <p className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af]`} style={{width:'max-content'}}>{item.label} → {item.value}</p>
+                            }
+                          })}
+                        
+                        {/* show what is changed and which user is added */}
+                          {activity.changedField.map((item, index) => (
+
+                            activity.title === 'Updated ' && item.newvalue ?
+                            <>
+                            <p key={index} className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
+                              {item.label} → {activity.title === 'Updated ' ?  ('From  ') :'' } { item.value  }
+                              { activity.title === 'Updated ' && `  to   ${item.newvalue} `}
+                            </p> 
+                            </>
+                             
+                            : 
+                            activity.title === 'Created ' && 
+                            <p key={index} className={`  ${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af]`} style={{width:'max-content'}}>
+                              {item.label} → { item.value  }
+                            </p>
+
+                            
+                          ))}
+
+                          {activity.changedField.map((item, index) => {
+                            if(activity.title === "Blocked " ){
+                              return <p className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
+                                  {item.label === 'Status' ?`${item.label}  → Changed Status from Active to ${item.value} `  : `${item.label}  → ${item.value}`} 
+                              </p>
+                            }
+                          })}
+
+                          {activity.changedField.map((item, index) => {
+                            if(activity.title === "Actived " ){
+                              return <p className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
+                                {item.label === 'Status' ?`${item.label}  → Changed Status from InActive to ${item.value} `  : `${item.label}  → ${item.value}`}
+                              </p>
+                            }
+                          })}
+
                       </div>
                     </div>
                   </div>
@@ -253,4 +385,4 @@ export const ActivityLog = (props) => {
       </div>
     </div>
   );
-};
+}

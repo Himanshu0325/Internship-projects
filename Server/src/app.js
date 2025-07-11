@@ -15,9 +15,11 @@ app.use(express.static("Public"));
 // Importing routes
 import userRoute from "./Routes/userRoute.js";
 import emailVerificationRoute from './Routes/emailVerificationRoute.js'
+import ActivityLogsRoute from './Routes/ActivityLogsRoute.js'
 
 // Using routes
 app.use("/api/v21/user", userRoute);
 app.use("/api/v21/email-Verification" , emailVerificationRoute)
+app.use("/api/v21/Activity-log" , ActivityLogsRoute )
 
 export{app}
