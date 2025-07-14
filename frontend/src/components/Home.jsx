@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { validateEmail } from "../utils/validateEmail";
 import { useParams, useSearchParams } from "react-router-dom";
+import CryptoJS from "crypto-js";
 
 
 import Button from 'react-bootstrap/Button';
@@ -17,7 +18,10 @@ import clear from '../assets/clear.png'
 import active from '../assets/active.png'
 import deactive from '../assets/de-active.png'
 import edit from '../assets/edit.png'
+import { Funnel } from 'lucide-react';
+
 import { ActivityLog } from "./Log";
+import { Filter } from "./Filter";
 
 
 function Home() {
@@ -36,11 +40,15 @@ function Home() {
   const [msg , setMsg] = useState(null)
   const [filterStatus, setFilterStatus] = useState("all");
   const [errLine , setErrLine] = useState(null)
-  const [errMsg , setErrMsg] = useState('')
   const [isValid , setIsValid] = useState(null)
+  const [isNameFilterOpen , setIsFilterOpen] = useState(false)
   
   
-  const id = localStorage.getItem('id')
+  const encryptedId = localStorage.getItem('id')
+  const bytes  = CryptoJS.AES.decrypt(encryptedId, import.meta.env.VITE_SECRET_KEY);
+  const decryptId = bytes.toString(CryptoJS.enc.Utf8);
+  const id = decryptId
+  
 
   const [isLogsOpen , setIsLogsOpen] = useState(false)
   const [form, setForm] = useState({
@@ -212,11 +220,13 @@ function Home() {
   }
 
 
-  const FetchData = async (pageNum = 1) => {
+  const FetchData = async (pageNum = 1 , filterStatus = 'reset') => {
     setLoading(true);
+    console.log(filterStatus);
+    
     await axios({
       method: search ? 'POST' : 'GET',
-      url: search ? `http://localhost:4000/api/v21/user/searchUser?page=${pageNum}&limit=8` : `http://localhost:4000/api/v21/user/getAllUsers?page=${pageNum}&limit=8`,
+      url: search ? `http://localhost:4000/api/v21/user/searchUser?page=${pageNum}&limit=8` : `http://localhost:4000/api/v21/user/getAllUsers?page=${pageNum}&limit=8&filter=${filterStatus}`,
       data: search ? { searchitem: searchitem } : null
     })
       .then((res) => {
@@ -296,37 +306,15 @@ function Home() {
     
   }, [page, search, searchitem])
 
-
-  useEffect(() => {
-  const filteredData = data.filter((item) => {
-    if (filterStatus === "all") return true;
-    if (filterStatus === "active") return item.status === true;
-    if (filterStatus === "deactive") return item.status === false;
-    if (filterStatus === "Verified") return item.isVerified === true;
-    if (filterStatus === "UnVerified") return item.isVerified === false;
-    return true;
-  });
-
-  console.log('Filtered data length:', filteredData.length , data.length , data);
-  
-  
-  if (filteredData.length < 8 &&  filteredData.length > 0 && !loading) {
-    console.log('Loading more data...' , filteredData.length, filteredData.length < 8 ,!loading);
-    setLoading(true);
-    setPage(prev => prev + 1);
-  }
-  
-}, [ filterStatus]);
-
   return (
     <div className="bg-[#f5f5f5] h-[93.20vh] w-[99vw] flex flex-col overflow-hidden ">
 
       <div className="w-full h-[10%] flex justify-between bg-white shadow-md rounded-lg  items-center" style={{ padding: '1.5rem' }}>
-        <div className="w-[50%] h-full flex items-center mx-2 ">
-          <Form inline className="flex w-[80%] ">
-            <Form.Control type="search" placeholder="Search by Name" className="mr-sm-2" onChange={(e) => { setSearchitem(e.target.value) }} />
+        <div className="w-[50%]  flex items-center mx-2 ">
+          <Form inline className="flex h-[2rem] w-[80%] " style={{width:'max-content'}}>
+            <Form.Control type="search" placeholder="Search by Name" className="mr-sm-2 " style={{width:'50%'}} onChange={(e) => { setSearchitem(e.target.value) }} />
 
-            <Button variant="dark" size="sm" style={{ width: '10.5rem', marginRight: '1rem', marginLeft: '.5rem' }} onClick={(e) => {
+            <Button variant="dark" size="sm" style={{ width: 'max-content', marginRight: '', marginLeft: '.5rem' ,display:'flex' , alignItems:'center' }} onClick={(e) => {
               setSearch(true)
               setPage(1)
               if (scrollRef.current) {
@@ -341,7 +329,7 @@ function Home() {
               />
               </Button>
 
-            <Button variant="light" className="border border-black" style={{ width: '10.5rem', marginRight: '1rem', marginLeft: '.5rem' }} onClick={() => { location.reload() }}>Clear
+            <Button variant="light" className="border border-black flex" style={{ width: 'max-content', marginLeft:'.5rem' }} onClick={() => { location.reload() }}>Clear
               <img
                 src={clear}
                 alt="clear"
@@ -357,11 +345,11 @@ function Home() {
           <Button className="m-[1rem] " onClick={()=>{setIsLogsOpen(true)}}>Activity Logs</Button>
 
           <DropdownButton id="dropdown-basic-button" title="Filter" style={{marginRight:'1rem'}} >
-            <Dropdown.Item onClick={()=>{setFilterStatus('reset') }}>All</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{setFilterStatus('active') }}>Active</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{setFilterStatus('deactive') }}>InActive</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{setFilterStatus('Verified') }}>Verified</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{setFilterStatus('UnVerified') }}>UnVerified</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ FetchData(1) }}>All</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ FetchData(1 , 'active') ,setPage(1) }}>Active</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ FetchData(1 ,'deactive') }}>InActive</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ FetchData(1,'Verified') }}>Verified</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ FetchData(1 , 'UnVerified') }}>UnVerified</Dropdown.Item>
           </DropdownButton>
 
           <Button style={{
@@ -402,7 +390,10 @@ function Home() {
           <thead>
             <tr className="bg-blue-600 text-black text-center border ">
               <th className="py-3 px-6 text-center border border-black">Sr. No.</th>
-              <th className="py-3 px-6 text-center border border-black">Name</th>
+              <th className="py-3 px-6 text-center border border-black"
+              onClick={()=>{setIsFilterOpen(true)}}>Name 
+                    <Funnel/>
+              </th>
               <th className="py-3 px-6 text-center border border-black">Username</th>
               <th className="py-3 px-6 text-center border border-black">Email</th>
               <th className="py-3 px-6 text-center border border-black">Edit</th>
@@ -413,14 +404,6 @@ function Home() {
           <tbody>
             
             {data
-              .filter((item) => {
-                if (filterStatus === "all") return true;
-                if (filterStatus === "active") return item.status === true;
-                if (filterStatus === "deactive") return item.status === false;
-                if (filterStatus === "Verified") return item.isVerified === true;
-                if (filterStatus === "UnVerified") return item.isVerified === false;
-                return true;
-              })
               .map((item, id) => (
                 <tr key={id} className={`border ${id % 2 === 0 ? 'bg-[#f3f4f6]' : 'bg-[#ffffff]'} m-[1rem]`}>
                   <td className="py-3 px-6  text-center border border-black">{id + 1}</td>
@@ -721,6 +704,7 @@ function Home() {
                 type="password"
                 id="passwordAdd"
                 name="password"
+                value={form.password}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 onChange={(e) => { setForm({ ...form, password: e.target.value }) }}
@@ -767,6 +751,16 @@ function Home() {
           <ActivityLog setIsLogsOpen={setIsLogsOpen}/>
          </div>
         }
+
+        {/* {
+          isNameFilterOpen && 
+          
+            <Filter setIsFilterOpen={setIsFilterOpen} setData={setData}/>
+          
+        } */}
+      <div className={`${isNameFilterOpen ? 'visible' : 'hidden'} h-screen w-screen absolute `} style={{ pointerEvents: 'auto' }}>
+          <Filter setIsFilterOpen={setIsFilterOpen} setData={setData}/>
+      </div>
 
     </div>
   )

@@ -148,19 +148,49 @@ const Verify = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
+
+    // const filterStatus = req.body.filterStatus
+    // console.log(req.body);
+    
     // Get page and limit from query, default to page 1, limit 8
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
+    const filterStatus = req.query.filter
     const skip = (page - 1) * limit;
 
+    let query = {};
+    // let total 
+
+    switch (filterStatus) {
+      case 'active':
+        query = { status: true };
+        break;
+      case 'deactive':
+        query = { status: false };
+        break;
+      case 'Verified':
+        query = { isVerified: true };
+        break;
+      case 'UnVerified':
+        query = { isVerified: false };
+        break;
+      // case 'reset':
+      //   query = {};
+      //   break;
+      default:
+        break;
+    }
+    console.log(filterStatus);
+    
     // Fetch users with pagination
-    const users = await User.find()
+    const users = await User.find(query)
       .sort({ _id: -1 })
       .skip(skip)
       .limit(limit);
 
     // Optionally, get total count for frontend
-    const total = await User.countDocuments();
+    const total = await User.countDocuments(query);
+
 
     res.status(200).json({
       status: 200,
@@ -314,6 +344,131 @@ const searchItem = async (req, res) => {
   }
 }
 
+// const FilterForName = async (req, res) => {
+
+//   try {
+//     const searchitem = req.query.searchitem
+   
+//     if(searchitem){
+//       //  data = await User.find({ fullName: { $regex: searchitem, $options: 'i' } }).limit(4).select('-password');
+//         const data = await User.distinct('fullName',{ fullName :  { $regex: searchitem, $options: 'i' }} )
+//       console.log(data);
+
+//       return res.status(200).json({
+//         status: 200,
+//         message: "User Founded",
+//         data: data,
+//         code: 200
+//       })
+     
+//     }
+
+//     // const users = await User.aggregate([{ $sample: { size: 4 } }])
+//     const users = await User.distinct('fullName')
+//     // const data = users.silice(0,4)
+    
+//     return res.status(200).json({
+//       status: 200,
+//       message: "User Founded",
+//       data: users,
+//       code: 200
+//     });
+    
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({
+//       status: 500,
+//       message: "Internal server error",
+//       data: null,
+//       code: 500
+//     });
+//   }
+// }
+
+const FilterForName = async (req, res) => {
+  try {
+    const searchitem = req.query.searchitem || "";
+    const limit = parseInt(req.query.limit) || 4;
+
+    let filter = {};
+    if (searchitem) {
+      filter.fullName = { $regex: searchitem, $options: 'i' };
+    }
+
+    // Get distinct full names, optionally filtered and limited
+    let data = await User.distinct('fullName', filter);
+
+    // Limit the results
+    if(!searchitem) {
+
+      data = data.slice(0, limit);
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "User(s) found",
+      data: data,
+      code: 200
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null,
+      code: 500
+    });
+  }
+}
+
+const ApplyNameFilter = async (req, res) => {
+  try {
+    const selectedData = req.body.selectedData;
+
+    if (!selectedData || selectedData.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: "No data selected",
+        data: null,
+        code: 400
+      });
+    }
+
+    // Assuming selectedData is an array of user IDs or names
+
+    const users = await User.find({ fullName:{ $in: selectedData}}).select('-password');
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: "No users found with the selected names",
+        data: null,
+        code: 404
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      message: "Users filtered successfully",
+      data: users,
+      code: 200
+    });
+    
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null,
+      code: 500
+    });
+    
+  }
+
+
+}
+
 const handleStatus = async (req, res) => {
   try {
 
@@ -362,4 +517,4 @@ const handleStatus = async (req, res) => {
   }
 }
 
-export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus }
+export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus , FilterForName , ApplyNameFilter };

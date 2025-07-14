@@ -4,6 +4,7 @@ import axios from "axios";
 import { Cookies } from "react-cookie";
 import Button from 'react-bootstrap/Button';
 import { validateEmail } from "../utils/validateEmail";
+import CryptoJS from "crypto-js";
 
 import login from '../assets/login.avif'
 
@@ -90,14 +91,17 @@ const Login = React.memo(() => {
         setIsMsgOpen(!isMsgOpen);
 
         const email = res.data.data.email
+        const id = res.data.data._id
         setLoggedInUser(email)
-        console.log(res.data.data.email,'******',loggedInUser);
 
-       localStorage.setItem('email', email)
-       localStorage.setItem('id', res.data.data._id)
+       const encriptedEmail = CryptoJS.AES.encrypt(email, import.meta.env.VITE_SECRET_KEY).toString();
+       const encriptedId = CryptoJS.AES.encrypt(id, import.meta.env.VITE_SECRET_KEY).toString();
+
+       localStorage.setItem('email', encriptedEmail)
+       localStorage.setItem('id', encriptedId)
         
 
-        const accessToken = res.data.tokens.accessToken;
+        const accessToken = res.data.tokens.aSccessToken;
         const refreshToken = res.data.tokens.refreshToken;
         console.log(accessToken, refreshToken);
 
@@ -132,12 +136,7 @@ const Login = React.memo(() => {
 
         if (res.data.message && res.data.message === 'OTP Created Successfully') {
           console.log('*****',res.data);
-          console.log(VerifyingEmail);
-
-           const encodedEmail = encodeURIComponent(VerifyingEmail);
-           console.log(encodedEmail);
-           
-           window.location.href = `/verify?email=${encodedEmail}`;
+           window.location.href = `/verify`;
         }
       })
   }

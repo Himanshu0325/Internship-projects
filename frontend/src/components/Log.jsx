@@ -1,4 +1,4 @@
-import React, {forwardRef, useImperativeHandle, useEffect, useState } from "react";
+import React, {forwardRef, useImperativeHandle, useEffect, useState , useRef} from "react";
 
 import logout from '../assets/logout.png'
 import axios from "axios";
@@ -7,6 +7,10 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   const [activityLogData, setActivityLogData] = useState([])
+  const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const scrollRef = useRef(null)
   
   const activityData = [
     {
@@ -36,9 +40,11 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
 
   
   
-  const filteredActivities = activeFilter === 'all' 
-    ? activityLogData 
-    : activityLogData.filter(activity => activity.category === activeFilter);
+  // const filteredActivities = activeFilter === 'all' 
+  //   ? activityLogData 
+  //   : activityLogData.filter(activity => activity.category === activeFilter);
+
+  const filteredActivities = activityLogData
   
   const getIconComponent = (iconName) => {
     switch(iconName) {
@@ -142,19 +148,22 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
   }
 };
 
-  const FetchData = async ()=>{
-    try {
-
+  const FetchData = async (pageNum = 1 , filterStatus = 'all')=>{
+    
+      setLoading(true)
       await axios({
         method:'GET',
-        url:'http://localhost:4000/api/v21/Activity-log/FetchALLActivityLogs',
+        url:`http://localhost:4000/api/v21/Activity-log/FetchALLActivityLogs?page=${pageNum}&limit=8&filter=${filterStatus}`,
       })
       .then((res)=>{
         console.log(res.data.data);
-        if (res.data.data && Array.isArray(res.data.data)) {
-          const FormatedData = res.data.data.map((item, index) => {
-            const actionConfig = getActionConfig(item.action);
+        if (res.data.data.length === 0) setHasMore(false);
 
+        if (res.data.data && Array.isArray(res.data.data)) {
+          const FormattedData = res.data.data.map((item, index) => {
+            const actionConfig = getActionConfig(item.action);
+            console.log(actionConfig,item.action);
+            
             return {
               id: index + 1,
               title: `${item.action} `,
@@ -171,25 +180,56 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
             };
 
           })
-          setActivityLogData(FormatedData);
-          console.log(FormatedData);
+
+          if (pageNum === 1) {
+            console.log('inside if');
+            
+          setActivityLogData(FormattedData);
+        } else {
+            console.log('inside else');
+            
+          setActivityLogData([ ...activityLogData , ...FormattedData])
+
+        }
+
+          // setActivityLogData(FormatedData);
+          console.log(FormattedData);
         }
         
       })
+      .catch((err)=>{
+        console.log(err);
+        
+      })
+      .finally(()=>{
+        setLoading(false)
+        setHasMore(true)
+      })
       
-    } catch (error) {
-      console.log(error);
-      
-    }
+  
+    
   }
 
   
+  
+
+  const handleScroll = async (e) => {
+      const { scrollTop, scrollHeight, clientHeight } = e.target;
+  
+      console.log(!loading , hasMore , '*',page ,scrollHeight - scrollTop - clientHeight);
+      
+      if (!loading && hasMore && scrollHeight - scrollTop - clientHeight < 100) {
+        setPage(prev => prev + 1);
+      }
+  
+    }
+  
   useEffect(()=>{
-    FetchData()
-  },[])
+    FetchData(page , activeFilter )
+  },[page ])
   
   return (
-    <div className={`h-full transition-all overflow-y-scroll duration-[400ms] ${darkMode ? 'bg-[#0f172a]' : 'bg-[#f8fafc]'}`}>
+    <div className={`h-full transition-all overflow-y-scroll duration-[400ms] ${darkMode ? 'bg-[#0f172a]' : 'bg-[#f8fafc]'}`} onScroll={handleScroll}>
       <div className="max-w-[64rem] mx-auto px-[1rem] py-[2rem] md:px-[2rem]">
         {/* Header */}
         <div className="flex justify-between items-center mb-[2rem]">
@@ -210,7 +250,7 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
                 : 'bg-[#ffffff] text-[#1e293b] hover:bg-[#f1f5f9] shadow-md'
             }`}
             style={{ boxShadow: darkMode ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-          >
+            >
             {darkMode ? (
               <svg className="w-[1.25rem] h-[1.25rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -237,7 +277,12 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
           {filterOptions.map((filter) => (
             <button 
               key={filter.key}
-              onClick={() => setActiveFilter(filter.key)}
+              // onClick={() => setActiveFilter(filter.key)}
+              onClick={()=>{ 
+                FetchData(1 , filter.key)
+                setPage(1)
+                setActiveFilter(filter.key)
+              }}
               className={`px-[1rem] py-[0.5rem] rounded-[2rem] text-[0.875rem] font-medium transition-all duration-[300ms] hover:scale-105 ${
                 activeFilter === filter.key 
                   ? 'text-white shadow-lg' 
@@ -264,12 +309,12 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
           {/* Timeline Line */}
           <div className={`absolute left-[1.5rem] top-0 bottom-0 w-[2px] ${darkMode ? 'bg-[#334155]' : 'bg-[#e2e8f0]'}`}></div>
           
-          <div className="space-y-[2rem]">
+          <div className="space-y-[2rem] pb-[5rem] ">
             {filteredActivities.map((activity, index) => (
               <div 
                 key={activity.id} 
                 className="relative group"
-                style={{ animationDelay: `${index * 100}ms` }}
+                style={{ animationDelay: `${index * 100}ms`  }}
               >
                 {/* Timeline Icon */}
                 <div 
@@ -319,7 +364,7 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
                         {
                           activity.changedField.map((item, index) => {
                             if( activity.title === 'Updated ' && item.label === 'userName' && !item.newvalue){
-                             return <p className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af]`} style={{width:'max-content'}}>{item.label} → {item.value}</p>
+                             return <p key={index} className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af]`} style={{width:'max-content'}}>{item.label} → {item.value}</p>
                             }
                           })}
                         
@@ -328,7 +373,7 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
 
                             activity.title === 'Updated ' && item.newvalue ?
                             <>
-                            <p key={index} className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
+                            <p key={index+1} className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
                               {item.label} → {activity.title === 'Updated ' ?  ('From  ') :'' } { item.value  }
                               { activity.title === 'Updated ' && `  to   ${item.newvalue} `}
                             </p> 
@@ -345,7 +390,7 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
 
                           {activity.changedField.map((item, index) => {
                             if(activity.title === "Blocked " ){
-                              return <p className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
+                              return <p key={index+2} className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
                                   {item.label === 'Status' ?`${item.label}  → Changed Status from Active to ${item.value} `  : `${item.label}  → ${item.value}`} 
                               </p>
                             }
@@ -353,7 +398,7 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
 
                           {activity.changedField.map((item, index) => {
                             if(activity.title === "Actived " ){
-                              return <p className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
+                              return <p key={index+3} className={`${index % 2 === 0 ? 'bg-[#e0d8f2]' : 'bg-[#86b0eb]'} ${index % 2 === 0 ? 'text-[#6a53a0]' : 'text-[#4775b5]'} p-[.35rem]  rounded-[0.5rem] m-[3px] border-1 border[#9ca3af] `} style={{width:'max-content'}}>
                                 {item.label === 'Status' ?`${item.label}  → Changed Status from InActive to ${item.value} `  : `${item.label}  → ${item.value}`}
                               </p>
                             }

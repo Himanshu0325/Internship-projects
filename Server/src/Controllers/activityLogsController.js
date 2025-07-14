@@ -124,10 +124,47 @@ const createActivityLog = async (req,res)=>{
 }
 
 const GetAllLogs = async (req,res) =>{
- const allActivityLogs = await ActivityLogs.find().sort({ _id: -1 })
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 8;
+  const filterStatus = req.query.filter
+  const skip = (page - 1) * limit;
+
+  console.log(filterStatus , req.query);
+  
+   let query = {};
+    // let total 
+
+    switch (filterStatus) {
+      case 'Created':
+        query = { action : 'Created' };
+        break;
+      case 'Updated':
+        query = { action :'Updated' };
+        break;
+      case 'Blocked':
+        query = { action : 'Blocked'};
+        break;
+      case 'Actived':
+        query = { action : 'Actived' };
+        break;
+      // case 'reset':
+      //   query = {};
+      //   break;
+      default:
+        break;
+    }
+    console.log(query);
+    
 
 
- console.log(allActivityLogs);
+  const allActivityLogs = await ActivityLogs.find(query)
+    .sort({ _id: -1 })
+    .skip(skip)
+    .limit(limit);
+
+
+//  console.log(allActivityLogs);
 
  return res.status(200).json({
     status: 200,
