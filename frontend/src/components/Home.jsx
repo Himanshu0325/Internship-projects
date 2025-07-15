@@ -38,7 +38,7 @@ function Home() {
   const scrollRef = useRef(null)
   const [isMsgOpen, setIsMsgOpen] = useState(false)
   const [msg , setMsg] = useState(null)
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("reset");
   const [errLine , setErrLine] = useState(null)
   const [isValid , setIsValid] = useState(null)
   const [isNameFilterOpen , setIsFilterOpen] = useState(false)
@@ -301,8 +301,10 @@ function Home() {
   };
 
   useEffect(() => {
-    FetchData(page)
-    console.log('fetchdata run');
+    
+    FetchData(page , filterStatus);
+    console.log(filterStatus);
+    console.log('fetchdata run',filterStatus);
     
   }, [page, search, searchitem])
 
@@ -346,10 +348,10 @@ function Home() {
 
           <DropdownButton id="dropdown-basic-button" title="Filter" style={{marginRight:'1rem'}} >
             <Dropdown.Item onClick={()=>{ FetchData(1) }}>All</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{ FetchData(1 , 'active') ,setPage(1) }}>Active</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{ FetchData(1 ,'deactive') }}>InActive</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{ FetchData(1,'Verified') }}>Verified</Dropdown.Item>
-            <Dropdown.Item onClick={()=>{ FetchData(1 , 'UnVerified') }}>UnVerified</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ setPage(1),setFilterStatus('active') , FetchData(1, 'active')  }}>Active</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ setPage(1) ,setFilterStatus('deactive'),FetchData(1 ,'deactive')  }}>InActive</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ setPage(1) , setFilterStatus('Verified') ,FetchData(1,'Verified')   }}>Verified</Dropdown.Item>
+            <Dropdown.Item onClick={()=>{ setPage(1) , setFilterStatus('UnVerified'),FetchData(1 , 'UnVerified')   }}>UnVerified</Dropdown.Item>
           </DropdownButton>
 
           <Button style={{

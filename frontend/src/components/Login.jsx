@@ -92,16 +92,29 @@ const Login = React.memo(() => {
 
         const email = res.data.data.email
         const id = res.data.data._id
+        const user = res.data.data
+        user.accessToken = res.data.tokens.acessToken;
+        console.log(user);
+        
         setLoggedInUser(email)
+
+        // Encrypt object
+        function encryptObject(obj, key) {
+          const jsonString = JSON.stringify(obj);
+          const encrypted = CryptoJS.AES.encrypt(jsonString, key).toString();
+          return encrypted;
+        }
 
        const encriptedEmail = CryptoJS.AES.encrypt(email, import.meta.env.VITE_SECRET_KEY).toString();
        const encriptedId = CryptoJS.AES.encrypt(id, import.meta.env.VITE_SECRET_KEY).toString();
+       const encriptedUser = encryptObject(user, import.meta.env.VITE_SECRET_KEY);
+        localStorage.setItem('user', encriptedUser)
 
        localStorage.setItem('email', encriptedEmail)
        localStorage.setItem('id', encriptedId)
         
 
-        const accessToken = res.data.tokens.aSccessToken;
+        const accessToken = res.data.tokens.acessToken;
         const refreshToken = res.data.tokens.refreshToken;
         console.log(accessToken, refreshToken);
 

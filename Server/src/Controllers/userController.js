@@ -1,5 +1,6 @@
 import { User } from "../Models/userModel.js";
 import jwt from 'jsonwebtoken'
+import { uploadOnCloudinary } from "../Utils/Cloudinary.js";
 
 function generateTokens(payload) {
   const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
@@ -28,6 +29,17 @@ const Register = async (req, res) => {
     });
   }
 
+  
+  console.log(req.files);
+  const profileImgLocalPath = req.files?.profileImg[0]?.path;
+
+  if (!profileImgLocalPath) {
+    console.log("Profile image not provided");
+    return
+  }
+
+  const profileImg = await uploadOnCloudinary(profileImgLocalPath);
+
   const existedUser = await User.findOne({
       $or: [{ userName }, { email }],
     });
@@ -48,7 +60,8 @@ const Register = async (req, res) => {
     userName,
     email,
     password,
-  });
+    profileImg: profileImg.url,
+  })
 
   if (!user) {
     console.error("Error creating user:", err);
@@ -59,6 +72,7 @@ const Register = async (req, res) => {
       code: 500
     });
   }
+  
 
   return res.status(201).json({
     status: 201,
@@ -118,10 +132,11 @@ const Verify = async (req, res) => {
       });
     }
 
-    const tokens = await generateTokens({ user_Id: user._id })
+    const tokens = generateTokens({ user_Id: user._id })
 
     const { acessToken, refreshToken } = tokens
-
+    console.log("Access Token:", acessToken);
+    
     user.save({
       refreshToken
     })
@@ -278,6 +293,56 @@ const updateUser = async (req, res) => {
 
   } catch (error) {
     console.error('Error in updateUser:', error);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null,
+      code: 500
+    });
+  }
+}
+
+const updateUserProfileImage = async (req, res) => {
+  try {
+    const userId = req.query.id;
+    const profileImgLocalPath = req.file?.path;
+    console.log("Profile image local path:", req.file?.path);
+
+    if (!profileImgLocalPath) {
+      return res.status(400).json({
+        status: 400,
+        message: "Profile image not provided",
+        data: null,
+        code: 400
+      });
+    }
+
+    const profileImg = await uploadOnCloudinary(profileImgLocalPath);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { profileImg: profileImg.url },
+      { new: true, select: '-password -__v' }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        status: 404,
+        message: "User not found",
+        data: null,
+        code: 404
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      message: "Profile image updated successfully",
+      data: { user: updatedUser },
+      code: 200
+    });
+
+  } catch (error) {
+    console.error('Error in updateUserProfileImage:', error);
     return res.status(500).json({
       status: 500,
       message: "Internal server error",
@@ -517,4 +582,4 @@ const handleStatus = async (req, res) => {
   }
 }
 
-export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus , FilterForName , ApplyNameFilter };
+export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus , FilterForName , ApplyNameFilter , updateUserProfileImage };

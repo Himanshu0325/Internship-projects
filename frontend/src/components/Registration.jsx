@@ -84,10 +84,21 @@ const Register = React.memo(() => {
     setErrLine(false);
 
     // Sending data to the server
+
+    const formData = new FormData();
+    formData.append("profileImg", form.profileImg);
+    formData.append("fullName", form.fullName);
+    formData.append("userName", form.userName);
+    formData.append("email", form.email);
+    formData.append("password", form.password);
+
+    const x = formData.get('profileImg');
+    console.log("Profile image file:", x);
+    
     await axios({
       method: 'POST',
       url: 'http://localhost:4000/api/v21/user/register',
-      data: form
+      data: formData
     })
       .then((res) => {
         console.log("Response from server:", res.data);
@@ -98,15 +109,7 @@ const Register = React.memo(() => {
         
         setVerifyingEmail(res.data.data.email)
 
-        // Clear form after successful registration
-        // setForm({
-        //   fullName: '',
-        //   userName: '',
-        //   email: '',
-        //   password: '',
-        //   cpassword:'',
-        //   otp: ''
-        // });
+       
 
         setError({
           fullName: false,
@@ -244,31 +247,16 @@ const Register = React.memo(() => {
             </div>
           </div>
 
-          <div className="flex gap-4">
-              {/* <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={form.password}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              onChange={(e) => {
-                setForm({ ...form, password: e.target.value });
-              }}
-              onClick={() => { setError({ ...error, password: true }); }}
-              
-            />
-            {error.password && (
-              <div className={`${!form.password ? 'visible' : 'hidden'} text-[#d62626]`}>
-                ! Password is required
-              </div>
-            )}
-          </div> */}
+          <div className="">
+            <input type="file" name="" id="" onChange={(e) =>{
+                setForm({...form , profileImg: e.target.files[0]})
+                console.log(e.target.files[0] );
+                
+                }}/>
+          </div>
 
+          <div className="flex gap-4">
+              
           <PasswordStrengthChecker
           password={form.password}
           onPasswordChange={handlePasswordChange}
