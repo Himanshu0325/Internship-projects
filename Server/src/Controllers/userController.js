@@ -1,6 +1,8 @@
 import { User } from "../Models/userModel.js";
 import jwt from 'jsonwebtoken'
 import { uploadOnCloudinary } from "../Utils/Cloudinary.js";
+import CryptoJS from "crypto-js";
+import Mailer from "../Helper/mailer.js";
 
 function generateTokens(payload) {
   const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
@@ -105,7 +107,9 @@ const Verify = async (req, res) => {
       });
     }
 
-    if (user.password !== password) {
+    const isPasswordCorrect = await user.isPasswordCorrect(password)
+    
+    if (!isPasswordCorrect) {
       return res.status(200).json({
         status: 401,
         message: "Invalid password",
@@ -113,7 +117,6 @@ const Verify = async (req, res) => {
         code: 401
       });
     }
-
     if (user.isVerified === false) {
       return res.status(400).json({
         status: 401,
@@ -138,7 +141,7 @@ const Verify = async (req, res) => {
     console.log("Access Token:", acessToken);
     
     user.save({
-      refreshToken
+      refreshToken : refreshToken
     })
 
     const loggedInUser = await User.findById(user._id).select("-password ");
@@ -229,7 +232,7 @@ const getAllUsers = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { fullName, userName, email } = req.body.form
+    const { fullName, userName, email , userId } = req.body.form
 
     if (!fullName || !userName || !email) {
       return res.status(400).json({
@@ -241,12 +244,12 @@ const updateUser = async (req, res) => {
     }
     console.log(req.body.editUserData);
 
-    const editUserId = req.body.editUserData._id
+    const editUserId = req.body.editUserData?._id || userId
     console.log(editUserId);
 
     const existedUser = await User.findOne({
       $or: [{ userName }, { email }],
-      _id: { $ne: editUserId } // Exclude the current user
+      _id: { $ne: editUserId  } // Exclude the current user
     });
     console.log(existedUser);
 
@@ -582,4 +585,103 @@ const handleStatus = async (req, res) => {
   }
 }
 
-export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus , FilterForName , ApplyNameFilter , updateUserProfileImage };
+const sendVerificationLink = async (req,res)=>{
+  try {
+    const VerifyingEmail = req.body.email
+    console.log(VerifyingEmail);
+    
+
+    if(!VerifyingEmail){
+      return res.status(400).json({
+        status: 400,
+        message: "All fields are required",
+        data: null,
+        code: 400
+      });
+    }
+
+    const encriptedEmail = CryptoJS.AES.encrypt(VerifyingEmail, process.env.SECRET_KEY).toString();
+
+    const user = await User.find({VerifyingEmail})
+    if(!user){
+      return res.status(400).json({
+        status: 400,
+        message: "User Not Found ! Try Again",
+        data: null,
+        code: 400
+      });
+    }
+
+    const SendingMail = await Mailer(VerifyingEmail , null ,encriptedEmail)
+    console.log(SendingMail);
+    
+
+    return res.status(200).json({
+      status: 200,
+      message: "Verification Email Sent",
+      data: user,
+      code: 200
+    })
+
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null,
+      code: 500
+    });
+  }
+}
+
+const updatePassword = async (req , res) =>{
+  try {
+    const {password , currentPassword ,conformpassword , userId} = req.body
+    console.log(password , currentPassword ,conformpassword , userId);
+
+    const user = await User.findById(userId)
+
+    const isPasswordCorrect = await user.isPasswordCorrect(currentPassword)
+
+    if(!isPasswordCorrect){
+       res.status(400).json({
+      status: 400,
+      message: "Incorrect Password",
+      data: null,
+      code: 400
+    });
+    }
+
+    if(password !== conformpassword){
+      return  res.status(400).json({
+      status: 400,
+      message: "Confirm Password must be same as Password",
+      data: null,
+      code: 400
+    });
+    }
+
+    user.password = password
+
+    await user.save()
+    
+    return  res.status(200).json({
+      status: 200,
+      message: "Password Updated",
+      data: null,
+      code: 200
+    });
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null,
+      code: 500
+    });
+  }
+}
+
+export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus , FilterForName , ApplyNameFilter , updateUserProfileImage , sendVerificationLink , updatePassword};

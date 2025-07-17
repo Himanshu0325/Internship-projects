@@ -8,6 +8,7 @@ import Home from './components/Home.jsx'
 import Login from './components/Login.jsx'
 import Register from './components/Registration.jsx'
 import OTPVerification from './components/Verify.jsx'
+import { UpdateInformation } from './components/UpdateInformation.jsx'
 
 const router = createBrowserRouter([
   {
@@ -36,13 +37,15 @@ const router = createBrowserRouter([
       }
     ]
   },
-
+  {
+    path: '/home/Update-Info',
+    element: <UpdateInformation/>,
+  }
 ]);
 
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    {/* <App /> */}
+     
     <RouterProvider router={router} />
-  </StrictMode>,
+  
 )

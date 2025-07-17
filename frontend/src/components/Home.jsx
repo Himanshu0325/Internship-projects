@@ -3,15 +3,16 @@ import withAuth from "../HOC/Verify";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { validateEmail } from "../utils/validateEmail";
-import { useParams, useSearchParams } from "react-router-dom";
 import CryptoJS from "crypto-js";
 
-
+// ui-components
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 
+
+// Assets
 import add from '../assets/add1.png'
 import searchimg from '../assets/search.png'
 import clear from '../assets/clear.png'
@@ -20,6 +21,8 @@ import deactive from '../assets/de-active.png'
 import edit from '../assets/edit.png'
 import { Funnel } from 'lucide-react';
 
+
+// Components
 import { ActivityLog } from "./Log";
 import { Filter } from "./Filter";
 
@@ -72,27 +75,36 @@ function Home() {
     e.preventDefault();
     console.log("Form submitted:", form);
 
-    if (!form.fullName || !form.userName || !form.email || !form.password) {
+    if (!form.fullName || !form.userName || !form.email || !form.password ) {
       setErrLine(false)
       setError({
-        fullName: true,
-        userName: true,
-        email: true,
-        password: true,
+        fullName: !form.fullName,
+        userName: !form.userName,
+        email: !form.email,
+        password: !form.password,
       });
-      if(form.email){
+      if (form.email) {
         const emailValidationResult = validateEmail(form.email);
         setIsValid(emailValidationResult);
   
-        if ( !emailValidationResult ) {
-          console.log('inside if', emailValidationResult);
-  
-          setErrLine(true)
-          return
+        if (!emailValidationResult) {
+          setErrLine(true);
+          return;
         }
       }
       return;
     }
+
+    if (form.email) {
+            const emailValidationResult = validateEmail(form.email);
+            setIsValid(emailValidationResult);
+      
+            if (!emailValidationResult) {
+              setErrLine(true);
+              return;
+            }
+          }
+    
       // Clear error line if email is valid
         setErrLine(false);
 
@@ -136,28 +148,36 @@ function Home() {
     try {
       console.log(form);
       
-      if (!form.email || !form.userName || !form.fullName) {
-        console.log('inside 1if');
-        
-      setErrLine(false);
+      if (!form.fullName || !form.userName || !form.email ) {
+      setErrLine(false)
       setError({
-        email: !form.email,
         fullName: !form.fullName,
-        userName: !form.userName
+        userName: !form.userName,
+        email: !form.email,
       });
-      if(form.email){
+      if (form.email) {
         const emailValidationResult = validateEmail(form.email);
         setIsValid(emailValidationResult);
-  
-        if ( !emailValidationResult ) {
-          console.log('inside if', emailValidationResult);
-  
-          setErrLine(true)
-          return
+        console.log(emailValidationResult);
+        
+        if (!emailValidationResult) {
+          setErrLine(true);
+          return;
         }
       }
       return;
     }
+
+    if (form.email) {
+            const emailValidationResult = validateEmail(form.email);
+            setIsValid(emailValidationResult);
+      
+            if (!emailValidationResult) {
+              setErrLine(true);
+              return;
+            }
+          }
+    
 
       // Clear error line if email is valid
         setErrLine(false);
@@ -288,6 +308,8 @@ function Home() {
     }
   }
 
+  // Function to highlight text 
+  // highlight = search term in the table
   const highlightText = (text, highlight) => {
     if (!highlight) return text;
     const regex = new RegExp(`(${highlight})`, 'gi');
@@ -299,6 +321,27 @@ function Home() {
       )
     );
   };
+
+  const AskToVerify = async (email) => {
+    try {
+      setLoading(true)
+      await axios({
+        method:'POST',
+        url:'http://localhost:4000/api/v21/user/VerifyingEmailLink',
+        data: {email :email}
+      })
+      .then((res)=>{
+        console.log(res.data);
+        setMsg(res.data.message)
+        setIsMsgOpen(!isMsgOpen)
+      })
+    } catch (error) {
+        setMsg(error.response.data.message)
+        setIsMsgOpen(!isMsgOpen)
+    } finally{
+        setLoading(false)
+    }
+  }
 
   useEffect(() => {
     
@@ -498,8 +541,12 @@ function Home() {
                     ) : (
                       <button
                          className="bg-[#c94d4d] border-none px-[1rem] py-[.5rem] text-white rounded-[3rem]"
+                        onClick={() => {
+                          AskToVerify(item.email)
+                          
+                        }}
                       >
-                        NOT-Verified
+                        Ask to Verify
                         <img
                           src={deactive}
                           alt="de-active"
@@ -754,15 +801,17 @@ function Home() {
          </div>
         }
 
-        {/* {
-          isNameFilterOpen && 
-          
-            <Filter setIsFilterOpen={setIsFilterOpen} setData={setData}/>
-          
-        } */}
+        
       <div className={`${isNameFilterOpen ? 'visible' : 'hidden'} h-screen w-screen absolute `} style={{ pointerEvents: 'auto' }}>
           <Filter setIsFilterOpen={setIsFilterOpen} setData={setData}/>
       </div>
+
+
+      {loading && (
+          <div className="absolute inset-0 h-full w-full top-[0px] bottom-[0px] flex items-center justify-center bg-white bg-opacity-50 rounded-[0.75rem]">
+            <div className="animate-spin h-[2rem] w-[2rem] border-4 border-[#3b82f6] border-t-transparent rounded-full" ></div>
+          </div>
+        )}
 
     </div>
   )

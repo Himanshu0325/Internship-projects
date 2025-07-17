@@ -10,9 +10,11 @@
   "author": "Himanshu Bidwaik",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cloudinary": "^2.7.0",
     "cookie": "^1.0.2",
     "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
     "dotenv": "^17.0.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",

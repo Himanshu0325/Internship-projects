@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import CryptoJS from "crypto-js";
 
 const OTPVerification = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -10,7 +11,10 @@ const OTPVerification = () => {
   const [countdown, setCountdown] = useState(30);
   const inputRefs = useRef([]);
   const [searchParams, setSearchParams] = useSearchParams();
-  const email = searchParams.get('email')
+  const [email , setEmail] = useState('')
+  const emailfromUrl = searchParams.get('email')
+  
+  
 
   useEffect(() => {
     let timer;
@@ -63,8 +67,11 @@ const OTPVerification = () => {
     }
   };
 
-  const handleVerify = async () => {
+  const handleVerify = async (e) => {
+    e.preventDefault()
     setVerificationStatus('verifying');
+    console.log(email);
+    
     const otpCode = otp.join('')
     await axios({
       method:'POST',
@@ -81,16 +88,7 @@ const OTPVerification = () => {
           location.replace('/login')
         },1500)
       }
-      // else{
-      //   setVerificationStatus('error');
-        
-      //    setTimeout(() => {
-      //     setVerificationStatus('idle');
-      //     setOtp(['', '', '', '']);
-      //     inputRefs.current[0]?.focus();
-      //     setActiveInput(0);
-      //   }, 2000);
-      // }
+      
     })
     .catch((error)=>{
       const Message = error.response.data.message
@@ -108,6 +106,31 @@ const OTPVerification = () => {
 
   };
 
+  // const creatingActivityLog = async (NewUserId , action , OldUserdata) =>{
+  //     console.log( id , NewUserId );
+      
+  //     try {
+  //       await axios({
+  //         method:'POST',
+  //         url:'http://localhost:4000/api/v21/Activity-log/Activitylog',
+  //         data:{
+  //            id : id,
+  //            tableName : 'UsersInfo',
+  //            recordId : NewUserId,
+  //            action : action,
+  //            OldUserdata : OldUserdata
+  //           }
+  //       })
+  //       .then((res)=>{
+  //         console.log(res.data);
+          
+  //       })
+  //     } catch (error) {
+  //       console.log(error);
+        
+  //     }
+  //   }
+
   const resendOTP = () => {
     setResendDisabled(true);
     setCountdown(30);
@@ -118,6 +141,67 @@ const OTPVerification = () => {
     // Simulate resend API call
     console.log('Resending OTP...');
   };
+
+  const GenerateOtp = async (VerifyingEmail)=>{
+  
+      await axios({
+        method:'POST',
+        url:'http://localhost:4000/api/v21/email-Verification/generate-otp',
+        data: {VerifyingEmail:VerifyingEmail}
+      })
+        .then((res) => {
+  
+          if (res.data.message && res.data.message === 'OTP Created Successfully') {
+            //  window.location.href = `/verify?email=${encodedEmail}`;
+          }else{
+            setMsg('Verification Failed Try Again')
+            setIsMsgOpen(true)
+          }
+        })
+    }
+
+ const fetchAndDecryptEmail = (searchParams) => {
+  let encryptedVerifyingMail = searchParams.get('VerifyingEmail');
+  console.log(encryptedVerifyingMail);
+
+  if (!encryptedVerifyingMail) {
+    console.error('No encrypted email found');
+    return null;
+  }
+
+  // Replace spaces with plus signs for valid base64 decoding
+  encryptedVerifyingMail = encryptedVerifyingMail.replace(/ /g, '+');
+
+  const decodedEmail = decodeURI(encryptedVerifyingMail) 
+  console.log(decodedEmail);
+  
+  try {
+    const bytes = CryptoJS.AES.decrypt(decodedEmail, import.meta.env.VITE_SECRET_KEY);
+    // const bytes = CryptoJS.AES.decrypt(encryptedVerifyingMail, import.meta.env.VITE_SECRET_KEY)
+    const decryptedEmail = bytes.toString(CryptoJS.enc.Utf8);
+
+    if (decryptedEmail) {
+      console.log('Decrypted email:', decryptedEmail);
+      setEmail(decryptedEmail)
+      return decryptedEmail;
+    } else {
+      console.error('Failed to decrypt email');
+      return null;
+    }
+  } catch (error) {
+    console.error('Decryption error:', error);
+    return null;
+  }
+};
+
+useEffect(() => {
+  const decryptedEmail = fetchAndDecryptEmail(searchParams);
+
+  if (decryptedEmail) {
+    console.log('Running GenerateOtp');
+    GenerateOtp(decryptedEmail);
+  }
+}, [searchParams]);
 
   return (
     <div className="bg-[#ffffff] rounded-[0.75rem] shadow-lg p-[2rem] h-max w-full animate-fade-in flex flex-col items-center">

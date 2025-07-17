@@ -1,7 +1,6 @@
 import React, { useEffect , useState} from 'react';
 import decryptObject from '../utils/decryptObject';
 import { Camera , X} from 'lucide-react';
-import ImageUploadForm from './UploadImage';
 import { ImageUpload } from './ImageUpload';
 
 const ProfileCard = (props) => {
@@ -44,7 +43,7 @@ const ProfileCard = (props) => {
 
   return (
     <>
-      <div className={`${props.openProfile ? 'visible' : 'hidden'} absolute max-w-[28rem] z-30 mx-auto bg-white rounded-[0.75rem] shadow-md overflow-hidden md:max-w-[32rem]`} style={{ top: '4rem', right: '2rem' }}>
+      <div className={`${props.openProfile ? 'visible' : 'hidden'} absolute max-w-[28rem] z-30 mx-auto bg-white border-1  rounded-[0.75rem] shadow-md overflow-hidden md:max-w-[32rem]`} style={{ top: '4.5rem', right: '2rem' }}>
         <div className="md:flex">
           <div className="md:shrink-0">
             <img
@@ -75,8 +74,11 @@ const ProfileCard = (props) => {
               <span className="ml-[0.5rem] text-[#4b5563]">{profileData.email}</span>
             </div>
             <div className="mt-[1.5rem]">
-              <button className="px-[1rem] py-[0.5rem] text-[0.875rem] text-[#ffffff] bg-[#6366f1] rounded-[0.25rem] hover:bg-[#5855eb] focus:outline-none focus:ring-[0.125rem] focus:ring-[#6366f1] focus:ring-offset-[0.125rem]" onClick={props.handleAuth}>
+              <button className="px-[1rem] py-[0.5rem] mr-[1rem] text-[0.875rem]  text-[#ffffff] bg-[#6366f1] rounded-[0.25rem] hover:bg-[#5855eb] focus:outline-none focus:ring-[0.125rem] focus:ring-[#6366f1] focus:ring-offset-[0.125rem]" onClick={props.handleAuth}>
                 Logout
+              </button>
+              <button className="px-[1rem] py-[0.5rem] text-[0.875rem] text-[#ffffff] bg-[#6366f1] rounded-[0.25rem] hover:bg-[#5855eb] focus:outline-none focus:ring-[0.125rem] focus:ring-[#6366f1] focus:ring-offset-[0.125rem]" onClick={()=>{location.replace('/home/Update-Info')}}>
+                Update Information
               </button>
             </div>
           </div>

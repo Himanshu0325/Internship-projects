@@ -63,6 +63,16 @@ const Register = React.memo(() => {
       return;
     }
 
+    if (form.email) {
+        const emailValidationResult = validateEmail(form.email);
+        setIsValid(emailValidationResult);
+  
+        if (!emailValidationResult) {
+          setErrLine(true);
+          return;
+        }
+      }
+
     if( form.password !== form.cpassword){
       console.log('inside if');
       
@@ -109,6 +119,7 @@ const Register = React.memo(() => {
         
         setVerifyingEmail(res.data.data.email)
 
+
        
 
         setError({
@@ -127,29 +138,29 @@ const Register = React.memo(() => {
       });
   };
 
-  const GenerateOtp = async ()=>{
+  // const GenerateOtp = async ()=>{
 
-    await axios({
-      method:'POST',
-      url:'http://localhost:4000/api/v21/email-Verification/generate-otp',
-      data: {VerifyingEmail:VerifyingEmail}
-    })
-      .then((res) => {
+  //   await axios({
+  //     method:'POST',
+  //     url:'http://localhost:4000/api/v21/email-Verification/generate-otp',
+  //     data: {VerifyingEmail:VerifyingEmail}
+  //   })
+  //     .then((res) => {
 
-        if (res.data.message && res.data.message === 'OTP Created Successfully') {
-          console.log('*****',res.data);
-          console.log(VerifyingEmail);
+  //       if (res.data.message && res.data.message === 'OTP Created Successfully') {
+  //         console.log('*****',res.data);
+  //         console.log(VerifyingEmail);
 
-           const encodedEmail = encodeURIComponent(VerifyingEmail);
-           console.log(encodedEmail);
+  //          const encodedEmail = encodeURIComponent(VerifyingEmail);
+  //          console.log(encodedEmail);
            
-           window.location.href = `/verify?email=${encodedEmail}`;
-        }else{
-          setMsg('Verification Failed Try Again')
-          setIsMsgOpen(true)
-        }
-      })
-  }
+  //         //  window.location.href = `/verify?email=${encodedEmail}`;
+  //       }else{
+  //         setMsg('Verification Failed Try Again')
+  //         setIsMsgOpen(true)
+  //       }
+  //     })
+  // }
 
    const handlePasswordChange = (e) => {
     setForm({ ...form, password: e.target.value });
@@ -313,7 +324,7 @@ const Register = React.memo(() => {
 
         <p className="flex self-center mx-auto my-4">
           Already have an account?{' '}
-          <Link to="/login" className="border-none text-[#0000FF] bg-white ml-1">
+          <Link to="/login" className="border-none text-[#0000FF] bg-white ml-[0.25rem] "  style={{textDecoration:'none'}}>
             Login
           </Link>
         </p>
@@ -331,8 +342,11 @@ const Register = React.memo(() => {
               setIsMsgOpen(!isMsgOpen);
               // Redirect to login after successful registration
               if (msg && msg.includes('successfully')) {
-                 await GenerateOtp()
-                 console.log('**');
+                //  await GenerateOtp()
+                const encriptedEmail = CryptoJS.AES.encrypt(VerifyingEmail, import.meta.env.VITE_SECRET_KEY).toString();
+                const encodedEmail = encodeURIComponent(encriptedEmail)
+                location.replace(`/verify?VerifyingEmail=${encodedEmail}`)
+                console.log('**');
               }
             }}
           >

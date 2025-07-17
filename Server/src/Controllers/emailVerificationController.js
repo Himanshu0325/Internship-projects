@@ -6,12 +6,32 @@ import { generateOTP } from "../Utils/OtpGeneration.js";
 const emailVerificationToken = async (req , res) =>{
   try {
 
+    console.log('generating otp');
+    
     const{ VerifyingEmail }= req.body
     const code = generateOTP()
     console.log(VerifyingEmail , code);
+
+    const ExistingToken = await EmailVerificationToken.findOne({email:VerifyingEmail})
+    console.log(ExistingToken);
     
 
-    const emailVerificationToken = EmailVerificationToken.create({
+    if (ExistingToken) {
+      console.log('Inside Exiting code');
+      
+      const code = ExistingToken.verificationCode
+      const SendingMail = await Mailer(VerifyingEmail , code)
+
+      return res.status(200).json({
+        status: 200,
+        message: "OTP Created Successfully",
+        data: null,
+        code: 200
+      });
+    }
+    
+
+    const emailVerificationToken = await EmailVerificationToken.create({
       email : VerifyingEmail,
       verificationCode : code
     })
@@ -26,7 +46,7 @@ const emailVerificationToken = async (req , res) =>{
     }
 
     const SendingMail = await Mailer(VerifyingEmail , code)
-    console.log(SendingMail);
+    
     
 
     // if (!SendingMail) {
@@ -99,7 +119,8 @@ const emailVerification = async (req,res)=>{
       user.isVerified = true;
       user.status = true;
       await user.save();
-      res.status(200).json({
+
+      return res.status(200).json({
         status: 200,
         message: 'OTP Matched',
         data: null,

@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-export default async function Mailer(email ,otp){
+export default async function Mailer(email ,otp , encriptedEmail){
   try {
     const transport =  nodemailer.createTransport(
       {
@@ -25,11 +25,13 @@ export default async function Mailer(email ,otp){
     await transport.verify();
     console.log('Transporter verified successfully');
 
+    const encodedEmail = encodeURIComponent(encriptedEmail);
+
     const emailOption = {
       from: process.env.MAIL_USER,
       to: email,
-      subject: "OTP Verification",
-      text: `Thank You joining Our Organization! here is your OTP : ${otp}`,
+      subject: "Email Verification",
+      text: otp ? `Thank You joining Our Organization! here is your OTP : ${otp}` : `click the link to verify ${`http://localhost:5173/verify/?VerifyingEmail=${encodedEmail}`}`,
     };
 
     console.log("Sending emails...");
@@ -39,7 +41,6 @@ export default async function Mailer(email ,otp){
       console.error('Error sending confirmation email:', error);
     })
 
-    console.log(emailPromises);
     
 
   } catch (error) {

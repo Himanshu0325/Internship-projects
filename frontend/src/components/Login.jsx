@@ -214,7 +214,13 @@ const Login = React.memo(() => {
               </div>
             )}
           </div>
+          <p className="flex text-center ">
+            forgot Password? 
 
+            <Link to="#" className="border-none text-[#0000FF] bg-white ml-[.25rem] " style={{textDecoration:'none'}}>
+              Reset
+            </Link>
+          </p>
           <Button 
             variant="dark" 
             size="sm" 
@@ -225,11 +231,12 @@ const Login = React.memo(() => {
           >
             Login
           </Button>
+          
         </form>
 
-        <p className="flex text-center mt-4">
+        <p className="flex text-center mt-">
           Don't have an account?{' '}
-          <Link to="/register" className="border-none text-[#0000FF] bg-white ml-1">
+          <Link to="/register" className="border-none text-[#0000FF] bg-white ml-[0.25rem] "  style={{textDecoration:'none'}}>
             Sign up
           </Link>
         </p>
@@ -258,10 +265,11 @@ const Login = React.memo(() => {
               if (msg && msg.includes('verify')) {
 
                 GenerateOtp()
-                const encodedEmail = encodeURIComponent(VerifyingEmail);
+                const encriptedEmail = CryptoJS.AES.encrypt(VerifyingEmail, import.meta.env.VITE_SECRET_KEY).toString();
+                const encodedEmail = encodeURIComponent(encriptedEmail);
                 console.log(encodedEmail);
 
-                window.location.href = `/verify?email=${encodedEmail}`;
+                window.location.href = `/verify?VerifyingEmail=${encodedEmail}`;
               }
 
             }}

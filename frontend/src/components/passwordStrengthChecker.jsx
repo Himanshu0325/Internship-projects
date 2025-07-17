@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Check, X } from 'lucide-react';
 
 export const PasswordStrengthChecker = ({ 
+  label,
   password, 
   onPasswordChange, 
   onStrengthChange,
@@ -108,7 +109,7 @@ export const PasswordStrengthChecker = ({
   return (
     <div>
       <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-        Password
+        {label ? label :'Password'}
       </label>
       <div className="relative">
         <input
@@ -134,7 +135,7 @@ export const PasswordStrengthChecker = ({
       {/* Error message - matching your form's error style */}
       {showError && (
         <div className={`${!password ? 'visible' : 'hidden'} text-[#d62626]`}>
-          ! Password is required
+          {`! ${label ? label : 'Password'} is required`}
         </div>
       )}
 

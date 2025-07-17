@@ -38,11 +38,7 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
 
   ];
 
-  
-  
-  // const filteredActivities = activeFilter === 'all' 
-  //   ? activityLogData 
-  //   : activityLogData.filter(activity => activity.category === activeFilter);
+
 
   const filteredActivities = activityLogData
   
@@ -144,7 +140,12 @@ export const ActivityLog = ({ setIsLogsOpen }) => {
   } else if (diffInHours < 48) {
     return 'Yesterday';
   } else {
-    return `${Math.floor(diffInHours / 24)} days ago`;
+    // return `${Math.floor(diffInHours / 24)} days ago`;
+    return date.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
   }
 };
 
