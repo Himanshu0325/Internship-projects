@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode , useEffect} from 'react'
 import { createRoot } from 'react-dom/client'
 import '../src/index.css'
 import App from './App.jsx'
@@ -9,6 +9,7 @@ import Login from './components/Login.jsx'
 import Register from './components/Registration.jsx'
 import OTPVerification from './components/Verify.jsx'
 import { UpdateInformation } from './components/UpdateInformation.jsx'
+
 
 const router = createBrowserRouter([
   {
@@ -34,13 +35,14 @@ const router = createBrowserRouter([
       {
         path: '/home',
         element: <Home />
+      },
+      {
+        path: '/home/Update-Info',
+        element: <UpdateInformation />,
       }
     ]
   },
-  {
-    path: '/home/Update-Info',
-    element: <UpdateInformation/>,
-  }
+  
 ]);
 
 

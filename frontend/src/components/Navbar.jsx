@@ -13,7 +13,7 @@ const Navbar = () => {
   const [refreshProfile, setRefreshProfile] = useState(0); // Add refresh trigger
   const cookie = new Cookies
 
-  function LogOut(params) {
+  function LogOut() {
     cookie.remove('accessToken')
     cookie.remove('refreshToken')
     location.reload()
@@ -46,12 +46,12 @@ const Navbar = () => {
     
     if (accessToken) {
       setLoggedIn(true)
+      decrypting()
     }
     else {
       setLoggedIn(false)
     }
     
-    decrypting()
   }, [refreshProfile]) // Remove encrypted dependency since it's now inside the function
 
   return (

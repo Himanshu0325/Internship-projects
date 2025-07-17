@@ -5,6 +5,7 @@ import { Cookies } from "react-cookie";
 import Button from 'react-bootstrap/Button';
 import { validateEmail } from "../utils/validateEmail";
 import { PasswordStrengthChecker } from "./passwordStrengthChecker";
+import CryptoJS from "crypto-js";
 
 
 import register from '../assets/register.webp'

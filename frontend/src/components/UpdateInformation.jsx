@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchUserProfile } from "../utils/fetchUserProfile";
 import { validateEmail } from "../utils/validateEmail.js";
+import { Cookies} from "react-cookie";
 import axios from "axios";
 
 
@@ -16,9 +17,7 @@ export const UpdateInformation = () => {
   const [msg, setMsg] = useState(null)
   const [errLine, setErrLine] = useState(null)
   const [isValid, setIsValid] = useState(null)
-  const [passwordStrength, setPasswordStrength] = useState(null);
-  const [IsPassMatched , setIsPasswordMatched] = useState(false)
-
+  const cookie = new Cookies
   const [form, setForm] = useState({
     fullName: '',
     userName: '',
@@ -161,8 +160,13 @@ export const UpdateInformation = () => {
   };
 
   useEffect(() => {
+    const accessToken = cookie.get('accessToken');
+    if (!accessToken) {
+      location.replace(`/login`);
+    }
     fillInputFeild()
   }, [])
+ 
 
   const toggleInfoModal = () => { setShowInfoModal(true), setShowPasswordModal(false) };
   const togglePasswordModal = () => { setShowPasswordModal(true), setShowInfoModal(false) };

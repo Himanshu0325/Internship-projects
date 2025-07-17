@@ -23,6 +23,7 @@
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10",
     "react": "^19.1.0",
-    "react-cookie": "^8.0.1"
+    "react-cookie": "^8.0.1",
+    "socket.io": "^4.8.1"
   }
 }

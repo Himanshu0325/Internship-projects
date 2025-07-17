@@ -684,4 +684,48 @@ const updatePassword = async (req , res) =>{
   }
 }
 
-export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus , FilterForName , ApplyNameFilter , updateUserProfileImage , sendVerificationLink , updatePassword};
+const LogoutIfUnVerified = async (req , res )=>{
+  try {
+    const {_id} = req.body
+    console.log(_id , req.body);
+    
+    if (!_id) {
+      return res.status(400).json({
+      status: 400,
+      message: "All feild are important",
+      data: null,
+      code: 400
+    });
+    }
+
+    const user = await User.findById(_id)
+    console.log('user:' , user);
+    
+    if (!user) {
+      return res.status(400).json({
+      status: 400,
+      message: "User Not Found , Try Again",
+      data: null,
+      code: 400
+    });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      message: "User Data",
+      data: user,
+      code: 200
+    });
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      status: 500,
+      message: "Internal server error",
+      data: null,
+      code: 500
+    });
+  }
+}
+
+export { Register, Verify, getAllUsers, updateUser, searchItem, handleStatus , FilterForName , ApplyNameFilter , updateUserProfileImage , sendVerificationLink , updatePassword , LogoutIfUnVerified};

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { validateEmail } from "../utils/validateEmail";
 import CryptoJS from "crypto-js";
+import { io } from "socket.io-client";
 
 // ui-components
 import Button from 'react-bootstrap/Button';
@@ -25,6 +26,7 @@ import { Funnel } from 'lucide-react';
 // Components
 import { ActivityLog } from "./Log";
 import { Filter } from "./Filter";
+import decryptObject from "../utils/decryptObject";
 
 
 function Home() {
@@ -45,6 +47,7 @@ function Home() {
   const [errLine , setErrLine] = useState(null)
   const [isValid , setIsValid] = useState(null)
   const [isNameFilterOpen , setIsFilterOpen] = useState(false)
+
   
   
   const encryptedId = localStorage.getItem('id')
@@ -52,7 +55,10 @@ function Home() {
   const decryptId = bytes.toString(CryptoJS.enc.Utf8);
   const id = decryptId
   
-
+  const encryptedData = localStorage.getItem('user')
+  const LoggedInUser = decryptObject(encryptedData , import.meta.env.VITE_SECRET_KEY)
+  
+  
   const [isLogsOpen , setIsLogsOpen] = useState(false)
   const [form, setForm] = useState({
     fullName: '',
@@ -66,9 +72,52 @@ function Home() {
     email: false,
     password: false,
   });
+  
+  function LogOut() {
+    cookie.remove('accessToken')
+    cookie.remove('refreshToken')
+    location.reload()
+  }
 
 
+  // const statusCheckInterval = setInterval( async () =>{
+  // await axios({
+  //   method:'POST',
+  //   url:'http://localhost:4000/api/v21/user/logoutIfUnverified',
+  //   data:LoggedInUser
+  // })
+  // .then((res)=>{
+  //   const data = res.data.data
+  //   console.log(res.data);
+    
+  //   if(data.status){
+  //     console.log(data.status);
+  //     return
+  //   }else{
+  //     LogOut()
+  //     clearInterval(statusCheckInterval)
+  //   }
+  // })
+  // }, 2 * 60 * 1000)
 
+  useEffect(() => {
+    const socket = io("http://localhost:4000", {
+      query: { userId: id } // send user id to server
+    });
+
+    socket.on("logout", () => {
+      LogOut();
+    });
+
+    // Optional: handle connection errors
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [id]);
   
 
   const submit = async (e) => {
